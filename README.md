@@ -23,8 +23,6 @@
 
 - [ ] drop方法
 
-- [ ] create方法
-
 #### 交给CXL
 
 - [x] select方法
@@ -40,6 +38,9 @@
 - [ ] insert方法
 
 - [ ] update方法
+
+- [ ] create方法
+
 ### 2. 需要做的方法总览
 
 **delete**
