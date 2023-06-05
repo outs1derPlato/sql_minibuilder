@@ -1,38 +1,14 @@
 from sql_parse.tokenizer import tokenizer  
 from sql_parse import tokens
+from sql_parse.ast_def import AST_KEYWORDS
+from sql_parse.ast_def import _statement,_clause
 import enum
 
-class AST_KEYWORDS(enum.IntEnum):
-    STATEMENT = 0
-    CLAUSE = 1
-
-class _statement:
-    def __init__(self):
-        self.attribute = AST_KEYWORDS.STATEMENT
-        self.content = []
-        self.value = None
-    
-    def deal(self, cls, value):
-        if cls == tokens.Name:
-            self.content.append(value)
-
-class _clause:
-    def __init__(self):
-        self.attribute = AST_KEYWORDS.CLAUSE
-        self.content = []
-
-    def deal(self, cls, value):
-        """
-        对于一个非关键词的token，根据自己clause的属性，将其加入到自己的内容中
-        """
-        if cls == tokens.Name:
-            self.content.append(value)
 
 class AST:
     def __init__(self, text = None):
-        pass
-        # self.get_tokens(text)
-        # self.content , _ = self.build_AST(start_idx=0, cur_node=_statement())
+        self.get_tokens(text)
+        self.content , _ = self.build_AST(start_idx=0, cur_node=_statement())
 
     def get_tokens(self, text: str):
         """
@@ -52,17 +28,31 @@ class AST:
         """
         return AST_KEYWORDS.CLAUSE
     
+    def create_node(self, level):
+        """
+        根据在AST中的层级，创建对应实例
+        """
+        if(level == AST_KEYWORDS.STATEMENT):
+            return _statement()
+        if(level == AST_KEYWORDS.CLAUSE):
+            return _clause()
+    
     def build_AST(self, start_idx = 0, cur_node = None):
         stream = self.token_stream
         idx = start_idx
         total_idx = len(stream)
         while idx < total_idx:
             cls, value = stream[idx]
-            print(cls,value)
+            # print(cls,value)
 
             # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
             if cls not in tokens.Keyword:
                 cur_node.deal(cls, value)
+
+            # 如果当前token为标点，对于逗号，注释不用管，但如果有括号，就得注意了
+            elif cls in tokens.Punctuation:
+                pass
+                # TODO: 实现括号的处理 
 
             # 如果当前token特殊，为关键字
             else:
@@ -74,8 +64,9 @@ class AST:
                 # 如果当前找到的关键词比自己低级，例如：
                 # 如果自己是一个statement(0)，遇到clause(1)说明有子句了，进行子句的build
                 elif(cur_node.attribute == cur_cls_level - 1):
-                    sub_node = _clause()
-                    sub_node.value = value
+                    sub_node = self.create_node(cur_cls_level)
+                    sub_node.value = value.upper()
+                    # print(sub_node.value)
                     builded_node, idx_get = self.build_AST(idx+1, sub_node) # 子结点build结束，回到当前结点
                     cur_node.content.append(builded_node)
                     idx = idx_get
@@ -85,8 +76,26 @@ class AST:
                     raise Exception(f"Current node level is {cur_node.attribute}, but the word level is {cur_cls_level}")
             idx = idx + 1
         return cur_node, idx
-
+    
+    def pprint(self):
+        """
+        用还算好看的方式打印自己的content
+        """
+        self.pprint_impl(cur_list = self.content.content)
         
+    def pprint_impl(self,depth = 0, cur_list = None,_pre = ''):
+        """
+        pprint的单层实现
+        """
+        for idx, cur_list_i in enumerate(cur_list):
+            if isinstance(cur_list_i, _clause):
+                print(f"{_pre} {cur_list_i.value}")
+                self.pprint_impl(depth=depth+1, cur_list=cur_list_i.content, _pre=_pre+'--')
+            else:
+                print(f"{_pre} {cur_list_i}")
+
+
+            
 
 if __name__ == "__main__":
     sql = """
@@ -94,8 +103,14 @@ if __name__ == "__main__":
     FROM table1
     WHERE id = 1 AND this < 2.3;
     """
-    a = AST()
-    ret = _statement()
-    a.get_tokens(sql)
-    builded_node, idx_get = a.build_AST(0, ret)
-    print(builded_node)
+    a = AST(sql)
+    # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
+    # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个clause，这
+    # 样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行WHERE查询，再
+    # 将AND查询的结果，与WHERE查询的结果取交集。如果后面还有AND，就再与左边的取
+    # 交集……这样对于多个AND没有问题，但是如果有OR，那么优先级就被打乱了，必须要
+    # 先完成OR两边的再对两边的结果取并集
+    # 现在来看这部分有点困难，先不要动为好
+    a.pprint()
+    # show = a.content
+    # print(show)
