@@ -54,6 +54,7 @@ class tokenizer:
         为了方便，这里的Tokenize不会对文本进行预处理，即不会将tab转换为空格，也不会去除空格
         此外，多行文本被压缩为一行，并去除了换行符，并且只能处理一行token
         """
+        text = text.replace("\n", " ").strip().rstrip() # 将text限制为一行
         iterable = enumerate(text)
         for pos, char in iterable: # 创建指针，处理当前指针向后看的字符
             for rexmatch, action in self._SQL_REGEX:
@@ -74,7 +75,11 @@ class tokenizer:
 
 
 if __name__ == "__main__":
-    sql = "select id, name, this from table where id = 1 AND this < 2;"
+    sql = """
+    SELECT id, name, this
+    FROM table
+    WHERE id = 1 AND this < 2;
+    """
     a = tokenizer()
     a.default_initialization()
     token_my = a.tokenize(sql)
