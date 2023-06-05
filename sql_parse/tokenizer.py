@@ -87,3 +87,17 @@ if __name__ == "__main__":
     for ttype, value in token_my:
         ret.append((ttype, value))
     print(ret)
+
+
+    # sql = """
+    # select a0, b0, c0, d0, e0 from 
+    # (select * from dual) 
+    # where a0=1 and b0=2'
+    # """
+    # a = tokenizer()
+    # a.default_initialization()
+    # token_my = a.tokenize(sql)
+    # ret = []
+    # for ttype, value in token_my:
+    #     ret.append((ttype, value))
+    # print(ret)
