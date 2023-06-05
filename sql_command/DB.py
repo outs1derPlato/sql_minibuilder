@@ -1,6 +1,9 @@
 import pandas as pd
 
 class DB:
+    def __init__(self):
+        self.dropped_tables = set()
+
     def select(self,
                 table: pd.DataFrame,       # 输入的表
                 sel_columns: list[str],    # 需要筛选的列
@@ -18,31 +21,44 @@ class DB:
         rs = table.iloc[sel_rows]
         rs = rs[sel_columns]
         return rs
-    def delete(self,table,del_rows,):#返回布尔值
+
+    def delete(self,
+                table: pd.DataFrame,
+                del_rows: list[int]
+                ) -> bool:
         #检测需要删除的行索引是否有效，即表中是否存在索引对应的记录
         invalid_rows = [index for index in del_rows if index not in table.index]
         #如果存在无效索引，则返回false，即删除操作失败
         if invalid_rows:
             return False
         #否则，则执行删除操作，并返回true，即删除操作成功
-        table = table.drop(del_rows)
+        table.drop(del_rows, inplace=True)
         return True
-    def drop(self,table):#返回布尔值
+
+    def drop(self, 
+                table: pd.DataFrame
+                ) -> bool:
         #判断需要删除的表是否存在
         #如果存在则执行删除操作，并返回Ture，即操作成功
         if isinstance(table, pd.DataFrame):
-            del table
+            # option 1：删除整个表
+            # del table
+            # option 2：删除表中所有记录
+            table.drop(table.index, inplace=True)
+            self.dropped_tables.add(table)
             return True
         #否则返回False，即操作失败
         return False
-a=DB()
+
 if __name__ == "__main__":
     # 读取数据
     data = pd.read_csv("C:\\Users\\DELL\\Desktop\\大二下\\01机器学习\\01 作业\\第7章\\chapter7\\watermelon_data_2.csv")
-    # print(data)
+    a=DB()
 
-    data2 = a.select(table=data,sel_columns=["触感"],sel_rows=[1,2,3])
-    # print(data2)
+    print(a.drop(data))
+    print(data)
+    # data2 = a.select(table=data,sel_columns=["触感"],sel_rows=[1,2,3])
+    # # print(data2)
 
-    data3 = pd.DataFrame()
-    print(data3)
+    # data3 = pd.DataFrame()
+    # print(data3)

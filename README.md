@@ -10,18 +10,37 @@
 
 ## SQL解释器
 
-目标： 抽象出AST
+### 1. 目标完成情况
 
-反正不是现在做
+目标： 
+
+- [x] 完成对单串命令文本的token化（`tokenizer.py`）
+
+输入：
+```
+sql = "select id, name, this from table where id = 1 AND this < 2;"
+```
+
+输出：
+```
+[(Token.Keyword.DML, 'select'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'from'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'where'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, 
+' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '2'), (Token.Punctuation, ';')]
+```
+
+- [ ] 在token基础上，抽象出AST（`AST_builder.py`）
+
+- [ ] 在AST基础上，实现对`sql_commands`的调用
+
+### 2. 目标总览
 
 ## SQL代码执行
 ### 1. 方法完成情况
 
 #### 交给XJW
 
-- [ ] delete方法
+- [x] delete方法（不完善，删去的对象没有保存于本地）
 
-- [ ] drop方法
+- [x] drop方法（有待争议，是丢掉整个对象，还是丢掉表中的所有行，但保留列属性？）
 
 #### 交给CXL
 
@@ -41,7 +60,7 @@
 
 - [ ] create方法
 
-### 2. 需要做的方法总览
+### 2. 方法总览
 
 **delete**
 
@@ -56,6 +75,8 @@ def delete(
 
 **drop**
 
+是drop整张表，删除其对象，还是
+
 ```python
 def drop(
     self,
@@ -64,6 +85,8 @@ def drop(
 ```
 
 **create**
+
+很明显这个还需要更多属性，例如，主键的`PRIMARY`，序列化的`SERIAL`，非空的`NOT NULL`
 
 ```python
 def delete(
