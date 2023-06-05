@@ -2,7 +2,31 @@ import pandas as pd
 
 class DB:
     def __init__(self):
-        self.dropped_tables = set()
+        self.dbtypes=dict[dict['tablename':str,'tabledata':pd.DataFrame,'datatypes':dict]]
+        self.database = {}
+        #访问某个表用 database['表名']
+        #访问某个表中的数据用 database['表名']['tabledata'] 这是一个pd.DataFrame型的数据
+        #访问某个表中某个属性的数据类型用 database['表名']['datatypes']['属性名']
+
+    def create(self,
+                table: str,
+                attributes: list[str],
+                types: list[str]) -> bool:
+        #检查表是否已经存在
+        if table in self.database:
+            print(f"Table '{table}' already exists.")
+            return False
+
+        #创建一个新表
+        newtable = {
+            'tablename': table,
+            'tabledata': pd.DataFrame(columns=attributes),
+            'datatypes': {attr: data_type for attr, data_type in zip(attributes, types)}
+        }
+        #数据库添加新表
+        self.database[table] = newtable
+        return True
+
 
     def select(self,
                 table: pd.DataFrame,       # 输入的表
@@ -49,16 +73,59 @@ class DB:
             return True
         #否则返回False，即操作失败
         return False
+    
+    def insert(self,
+            table: pd.DataFrame,
+            attributes: list[str],
+            values: list[list]
+            ) -> list[bool, pd.DataFrame]:
+        try:
+            new_rows = pd.DataFrame(values, columns=attributes)
+            # 更新表
+            table = pd.concat([table, new_rows], ignore_index=True)
+
+            return [True,table]
+        except Exception as e:
+            print(f"Insertion failed: {e}")
+            return [False,None]
+
+    def update(self,
+                table: pd.DataFrame,
+                update_rows: list[int], #更新的行
+                attributes: list[str],  #更新的列
+                values: list[list]
+            ) -> list[bool,pd.DataFrame]:
+        try:
+            if (update_rows==None) and (attributes==None):#更新所有
+                table.loc[:,:]=values
+                return [True,table]
+            elif update_rows==None:#更新指定列所有行
+                table.loc[:,attributes]=values
+                return [True,table]
+            elif attributes==None:#更新指定行所有列
+                table.loc[update_rows,:]=values
+                return [True,table]
+            else:#更新指定行指定列
+                table.loc[update_rows,attributes]=values
+                return [True,table]
+        except Exception as e:
+            print(f"update failed: {e}")
+            return [False,None]
+
 
 if __name__ == "__main__":
     # 读取数据
-    data = pd.read_csv("C:\\Users\\DELL\\Desktop\\大二下\\01机器学习\\01 作业\\第7章\\chapter7\\watermelon_data_2.csv")
-    a=DB()
-
-    print(a.drop(data))
-    print(data)
-    # data2 = a.select(table=data,sel_columns=["触感"],sel_rows=[1,2,3])
-    # # print(data2)
-
-    # data3 = pd.DataFrame()
-    # print(data3)
+    a = DB()
+    a.create("test",["索引","姓名"], [int,str])
+    [flag,a.database['test']['tabledata']]=a.insert(table=a.database['test']['tabledata'],attributes=["索引"],values=[[23],[24]])
+    print(a.database['test']['tabledata'])
+    #更新test表
+    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=None,attributes=["姓名"], values=[["张三"],["王五"]])
+    print(a.database['test']['tabledata'])
+    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=[1],attributes=None, values=[[1,"李四"]])
+    print(a.database['test']['tabledata'])
+    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=[1],attributes=["索引"], values=[[24]])
+    print(a.database['test']['tabledata'])
+    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=None,attributes=None, values=[[1,"李四"],[2,"王五"]])
+    print(a.database['test']['tabledata'])
+    print()
