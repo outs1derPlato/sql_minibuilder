@@ -20,7 +20,7 @@
 ```
 """
 SELECT id, name, this
-FROM table
+FROM table1
 WHERE id = 1 AND this < 2.3;
 """
 
@@ -28,10 +28,64 @@ WHERE id = 1 AND this < 2.3;
 
 输出：
 ```
-[(Token.Keyword.DML, 'SELECT'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'FROM'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'WHERE'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Float, '2.3'), (Token.Punctuation, ';')]
+[(Token.Keyword.DML, 'SELECT'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'FROM'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table1'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'WHERE'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Float, '2.3'), (Token.Punctuation, ';')]
 ```
 
 - [ ] 在token基础上，抽象出AST（`AST_builder.py`）
+
+输入：
+```
+SELECT id, name, this
+FROM table1
+WHERE id = 1 AND this < 2.3;
+```
+
+期望输出：
+```
+statements: [
+    - SelectStmt {
+        type: "select_stmt"
+        - clauses: [
+            - SelectClause {
+                type: "select_clause"
+                - columns: [
+                    - "id"
+                    - "name"
+                    - "this"
+                ]
+            }
+            - FromClause {
+                type: "from_clause"
+                - tables: [
+                    - "table1"
+                ]
+            }
+            - WhereClause {
+                type: "where_clause"
+                - exprs: [
+                    operator: "AND"
+                    left: exprs[
+                        operator: "="
+                        left: "id"
+                        right: 1
+                    ]
+                    right: exprs[
+                        operator: "<"
+                        left: "this"
+                        right: 2.3
+                    ]
+                ]
+            }
+        ]
+    }
+]
+```
+
+**用语解释**：
+
+- statement: 需要执行的一条语句，以`;`结尾
+
+- clause: 语句中的子句，一般一个查询的SQL语句可以被分为`select caluse`，`from clause`, `where clause`
 
 - [ ] 在AST基础上，实现对`sql_commands`的调用
 
