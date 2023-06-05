@@ -162,7 +162,7 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 
 - [x] select方法
 
-- [ ] where方法
+- [x] where方法
 
 #### 交给YS
 
