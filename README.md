@@ -33,6 +33,8 @@ WHERE id = 1 AND this < 2.3;
 
 - [ ] 在token基础上，抽象出AST（`AST_builder.py`）
 
+**目前已部分完成，只到能够解析查询命令（SELECT）的地方**
+
 输入：
 ```
 SELECT id, name, this
@@ -81,6 +83,22 @@ statements: [
 ]
 ```
 
+**实际输出**：
+（可以看到`WHERE`被利用了两次，一次是作为`CLAUSE`，一次是作为`EXPRESSION`）
+```
+SELECT                                             level:AST_KEYWORDS.CLAUSE
+-- id
+-- name
+-- this
+FROM                                               level:AST_KEYWORDS.CLAUSE
+-- table1
+WHERE                                              level:AST_KEYWORDS.CLAUSE
+--WHERE                                            level:AST_KEYWORDS.EXPRESSION
+---- {'left': 'id', 'op': '=', 'right': 1}
+--AND                                              level:AST_KEYWORDS.EXPRESSION
+---- {'left': 'this', 'op': '<', 'right': 2.3}
+```
+
 **用语解释**：
 
 - statement: 需要执行的一条语句，以`;`结尾
@@ -108,15 +126,16 @@ statements: [
 
 #### 交给YS
 
+- [x] insert方法
+
+- [x] update方法
+
+- [x] create方法
+
 #### 交给LZH
 
 #### 无人认领
 
-- [ ] insert方法
-
-- [ ] update方法
-
-- [ ] create方法
 
 ### 2. 方法总览
 
