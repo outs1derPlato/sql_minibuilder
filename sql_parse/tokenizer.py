@@ -78,7 +78,7 @@ if __name__ == "__main__":
     sql = """
     SELECT id, name, this
     FROM table
-    WHERE id = 1 AND this < 2;
+    WHERE id = 1 AND this < 2.3;
     """
     a = tokenizer()
     a.default_initialization()

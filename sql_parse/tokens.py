@@ -1,9 +1,3 @@
-# Copyright (C) 2009-2020 the sqlparse authors and contributors
-# <see AUTHORS file>
-#
-# This module is part of python-sqlparse and is released under
-# the BSD License: https://opensource.org/licenses/BSD-3-Clause
-#
 # The Token implementation is based on pygment's token system written
 # by Georg Brandl.
 # http://pygments.org/

@@ -18,13 +18,17 @@
 
 输入：
 ```
-sql = "select id, name, this from table where id = 1 AND this < 2;"
+"""
+SELECT id, name, this
+FROM table
+WHERE id = 1 AND this < 2.3;
+"""
+
 ```
 
 输出：
 ```
-[(Token.Keyword.DML, 'select'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'from'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'where'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, 
-' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '2'), (Token.Punctuation, ';')]
+[(Token.Keyword.DML, 'SELECT'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'FROM'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'WHERE'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Float, '2.3'), (Token.Punctuation, ';')]
 ```
 
 - [ ] 在token基础上，抽象出AST（`AST_builder.py`）
