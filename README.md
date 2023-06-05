@@ -1,10 +1,10 @@
-目前只需要改commands/DB.py就行了
+~~目前只需要改commands/DB.py就行了~~
 
+commands中的执行功能都差不多写完了，tokenize已完成，AST写了一点
 
+可以完善AST，也可以实现AST与具体功能的结合
 
 自己实现的功能先自己建个分支比较好
-
-
 
 # 任务
 
@@ -146,7 +146,6 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 - [ ] 完成AST与执行代码关于SELECT的结合
 
 - [ ] 更多
-
 
 ### 2. 目标总览
 
