@@ -78,54 +78,77 @@ class DB:
             table: pd.DataFrame,
             attributes: list[str],
             values: list[list]
-            ) -> list[bool, pd.DataFrame]:
+            ) -> tuple[bool, pd.DataFrame]:
         try:
             new_rows = pd.DataFrame(values, columns=attributes)
             # 更新表
             table = pd.concat([table, new_rows], ignore_index=True)
 
-            return [True,table]
+            return True, table
         except Exception as e:
             print(f"Insertion failed: {e}")
-            return [False,None]
+            return False, None
 
     def update(self,
                 table: pd.DataFrame,
                 update_rows: list[int], #更新的行
                 attributes: list[str],  #更新的列
                 values: list[list]
-            ) -> list[bool,pd.DataFrame]:
+            ) -> tuple[bool,pd.DataFrame]:
         try:
             if (update_rows==None) and (attributes==None):#更新所有
                 table.loc[:,:]=values
-                return [True,table]
+                return True, table
             elif update_rows==None:#更新指定列所有行
                 table.loc[:,attributes]=values
-                return [True,table]
+                return True, table
             elif attributes==None:#更新指定行所有列
                 table.loc[update_rows,:]=values
-                return [True,table]
+                return True, table
             else:#更新指定行指定列
                 table.loc[update_rows,attributes]=values
-                return [True,table]
+                return True, table
         except Exception as e:
             print(f"update failed: {e}")
-            return [False,None]
+            return False, None
+    
+    def where(self,
+                table: pd.DataFrame,
+                attribute: str,
+                value,
+                operand
+                ) -> list[int]:
+        if operand == "=":
+            return table[table[attribute] == value].index.tolist()
+        if operand == ">":
+            return table[table[attribute] > value].index.tolist()
+        if operand == "<":
+            return table[table[attribute] < value].index.tolist()
+        if operand == ">=":
+            return table[table[attribute] >= value].index.tolist()
+        if operand == "<=":
+            return table[table[attribute] <= value].index.tolist()
 
 
 if __name__ == "__main__":
     # 读取数据
     a = DB()
     a.create("test",["索引","姓名"], [int,str])
-    [flag,a.database['test']['tabledata']]=a.insert(table=a.database['test']['tabledata'],attributes=["索引"],values=[[23],[24]])
-    print(a.database['test']['tabledata'])
+    test_table = a.database['test']['tabledata']
+    flag, test_table = a.insert(table=test_table,attributes=["索引"],values=[[23],[24]])
+    print(test_table)
+
     #更新test表
-    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=None,attributes=["姓名"], values=[["张三"],["王五"]])
-    print(a.database['test']['tabledata'])
-    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=[1],attributes=None, values=[[1,"李四"]])
-    print(a.database['test']['tabledata'])
-    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=[1],attributes=["索引"], values=[[24]])
-    print(a.database['test']['tabledata'])
-    [flag,a.database['test']['tabledata']]=a.update(table=a.database['test']['tabledata'],update_rows=None,attributes=None, values=[[1,"李四"],[2,"王五"]])
-    print(a.database['test']['tabledata'])
-    print()
+    flag, test_table =a.update(table=test_table,update_rows=None,attributes=["姓名"], values=[["张三"],["王五"]])
+    print(test_table)
+    flag, test_table =a.update(table=test_table,update_rows=[1],attributes=None, values=[[1,"李四"]])
+    print(test_table)
+    flag, test_table =a.update(table=test_table,update_rows=[1],attributes=["索引"], values=[[24]])
+    print(test_table)
+    flag, test_table =a.update(table=test_table,update_rows=None,attributes=None, values=[[1,"李四"],[2,"王五"]])
+    print(test_table)
+
+    #测试where
+    print("\n\n\n\n")
+    print("王五的index是：")
+    print(a.where(test_table,"姓名","王五","="))
