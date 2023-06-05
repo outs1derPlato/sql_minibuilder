@@ -14,7 +14,13 @@
 
 目标： 
 
-- [x] 完成对单串命令文本的token化（`tokenizer.py`）
+#### 1.1 对单串命令文本的token化
+
+文件：（`tokenizer.py`）
+
+完成情况：
+
+- [x] 总体
 
 输入：
 ```
@@ -31,7 +37,28 @@ WHERE id = 1 AND this < 2.3;
 [(Token.Keyword.DML, 'SELECT'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'name'), (Token.Punctuation, ','), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'FROM'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'table1'), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Text.Whitespace, ' '), (Token.Keyword, 'WHERE'), (Token.Text.Whitespace, ' '), (Token.Name, 'id'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '='), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Integer, '1'), (Token.Text.Whitespace, ' '), (Token.Keyword, 'AND'), (Token.Text.Whitespace, ' '), (Token.Name, 'this'), (Token.Text.Whitespace, ' '), (Token.Operator.Comparison, '<'), (Token.Text.Whitespace, ' '), (Token.Literal.Number.Float, '2.3'), (Token.Punctuation, ';')]
 ```
 
-- [ ] 在token基础上，抽象出AST（`AST_builder.py`）
+#### 1.2 在token基础上，抽象出AST
+
+文件：`AST_builder.py`
+
+完成情况：
+
+- [x] 对SELECT的实现
+
+- [X] 对FROM的实现
+
+- [x] 对WHERE的基础实现
+
+- [ ] 对WHERE中AND、OR的正确顺序判断
+
+- [ ] 对CREATE的实现
+
+- [ ] 对UPDATE的实现
+
+- [ ] 对主键`PRIMARY`的实现
+
+- [ ] 对非空`NOT NULL`的实现
+
 
 **目前已部分完成，只到能够解析查询命令（SELECT）的地方**
 
@@ -105,7 +132,21 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 
 - clause: 语句中的子句，一般一个查询的SQL语句可以被分为`select caluse`，`from clause`, `where clause`
 
-- [ ] 在AST基础上，实现对`sql_commands`的调用
+
+
+
+#### 1.3 在AST基础上，实现对`sql_commands`的调用，完成语句
+
+文件：`sql_commands/main.py`（示例用，之后可能会改）
+
+- [x] 完成示例文件，演示如何结合AST与实现的`sql_commands`，通过FROM语句获得databse中的表
+
+- [ ] 完成AST与执行代码关于WHERE的结合
+
+- [ ] 完成AST与执行代码关于SELECT的结合
+
+- [ ] 更多
+
 
 ### 2. 目标总览
 
@@ -134,7 +175,7 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 
 #### 交给LZH
 
-#### 无人认领
+#### 好像差不多都完成了，有问题之后再改
 
 
 ### 2. 方法总览
