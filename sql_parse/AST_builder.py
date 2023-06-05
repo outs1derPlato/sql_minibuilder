@@ -2,7 +2,6 @@ from sql_parse.tokenizer import tokenizer
 from sql_parse import tokens
 from sql_parse.ast_def import AST_KEYWORDS
 from sql_parse.ast_def import _statement,_clause,_expression
-import enum
 
 
 class AST:
@@ -127,5 +126,5 @@ if __name__ == "__main__":
     # 乱了，必须要先完成OR两边的再对两边的结果取并集
     # 现在来看这部分有点困难，先不要动为好
     a.pprint()
-    # show = a.content
-    # print(show)
+    show = a.content
+    print("\n\n",show)
