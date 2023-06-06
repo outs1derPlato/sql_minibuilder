@@ -30,7 +30,7 @@ class _clause:
             if cls in tokens.Name:
                 self.content.append(value)
         # 当前clause的类型决定其会记录tables
-        if self.value in ["FROM"]: 
+        if self.value in ["FROM", "UPDATE"]: 
             if cls in tokens.Name:
                 self.content.append(value)
         # 当前clause的类型决定其会记录一个表达式
@@ -51,7 +51,7 @@ class _expression:
         """
         对于一个非关键词的token，根据自己expression的类型，将其加入到自己的内容中
         """
-        if self.value in ["WHERE", "AND", "OR"]: 
+        if self.value in ["WHERE", "AND", "OR", "SET"]: 
             if cls in tokens.Name or cls in tokens.Literal:
                 if self.content == []: # 左边
                     sub_expr_left = {"left": Numerize(cls,value), "op": None, "right": None}
@@ -68,8 +68,8 @@ def Numerize(cls, text: str):
     """
     if cls not in tokens.Literal:
         return text
-    if cls == tokens.Literal.String:
-        return text
+    if cls in tokens.Literal.String:
+        return text.strip("'\"")
     if cls in tokens.Literal.Number:
         if cls == tokens.Literal.Number.Float:
             return float(text)
@@ -77,4 +77,5 @@ def Numerize(cls, text: str):
             return int(text)
         if cls == tokens.Literal.Number.Hexadecimal:
             return int(text, 16)
+    raise Exception("Unhandled type of text for expression")
     

@@ -7,7 +7,9 @@ from sql_parse.ast_def import _statement,_clause,_expression
 class AST:
     def __init__(self, text = None):
         self.get_tokens(text)
-        self.content , _ = self.build_AST(start_idx=0, cur_node=_statement())
+        new_statement = _statement()
+        new_statement.attribute = AST_KEYWORDS.STATEMENT
+        self.content , _ = self.build_AST(start_idx=0, cur_node=new_statement)
 
     def get_tokens(self, text: str):
         """
@@ -15,20 +17,26 @@ class AST:
         """
         a = tokenizer()
         a.default_initialization()
-        token_my = a.tokenize(text)
+        token_iter = a.tokenize(text)
         ret = []
-        for ttype, value in token_my:
-            ret.append((ttype, value))
-        self.token_stream = ret
+        for ttype, value in token_iter:
+            if ttype is tokens.Error:
+                raise Exception("Error tokenizing at TOKEN: %s" % value)
+            else:
+                ret.append((ttype, value))
+        self.tokens = ret
     
     def get_level(self, value, par_value):
         """
-        根据当前结点level，以及当前关键词的class，决定此token在AST中的层级
+        根据当前结点value，以及当前关键词的class，决定此token在AST中的层级
         """
         if par_value == "WHERE":
             if value == "WHERE":
                 return AST_KEYWORDS.EXPRESSION
-        if value in ["WHERE","FROM","SELECT"]:
+        if par_value == "SET":
+            if value == "SET":
+                return AST_KEYWORDS.EXPRESSION
+        if value in ["WHERE","FROM","SELECT","UPDATE","SET"]:
             return AST_KEYWORDS.CLAUSE
         if value in ["AND", "OR"]:
             return AST_KEYWORDS.EXPRESSION
@@ -44,23 +52,36 @@ class AST:
         if(level == AST_KEYWORDS.EXPRESSION):
             return _expression()
     
-    def build_AST(self, start_idx = 0, cur_node = None, revisited=False):
-        stream = self.token_stream
+    def build_AST(self, start_idx = 0, cur_node = None):
+        stream = self.tokens
         idx = start_idx
         total_idx = len(stream)
         while idx < total_idx:
             cls, value = stream[idx]
-            # print(cls,value)
 
             # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
-            if cls not in tokens.Keyword:
+            if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
                 cur_node.deal(cls, value)
 
-            # 如果当前token为标点，对于逗号，注释不用管，但如果有括号，就得注意了
+            # 如果当前token为标点，对于注释不用管，但如果有括号、逗号，就得注意了
             elif cls in tokens.Punctuation:
                 # TODO: 实现括号的处理 
                 if value in ["(", ")"]:
                     pass
+                # 一般来说，逗号不用管都可以正确处理，除了一种情况——SET之后用逗号分隔的多个表达式
+                # SET alas = 1, country = usa, cc = 13.4
+                if value in [","]:
+                    if cur_node.value == "SET":
+                        par_cls_level = cur_node.attribute
+                        if par_cls_level is AST_KEYWORDS.EXPRESSION:
+                            return cur_node, idx
+                        if par_cls_level is AST_KEYWORDS.CLAUSE:
+                            sub_node = self.create_node(AST_KEYWORDS.EXPRESSION)
+                            sub_node.value = "SET"
+                            builded_node, idx_get = self.build_AST(idx+1, sub_node)
+                            cur_node.content.append(builded_node)
+                            idx = idx_get
+                            continue
 
             # 如果当前token特殊，为关键字
             else:
@@ -77,13 +98,18 @@ class AST:
                     sub_node = self.create_node(cur_cls_level)
                     sub_node.value = value.upper()
                     # WHERE的特殊性在于，存在WHERE开头的clause，也存在WHERE开头的expression,WHERE需要被走两遍
-                    if sub_node.value in ["WHERE"] and cur_cls_level == AST_KEYWORDS.CLAUSE:
+                    # SET同理
+                    if sub_node.value in ["WHERE", "SET"] and cur_cls_level == AST_KEYWORDS.CLAUSE:
                         builded_node, idx_get = self.build_AST(idx, sub_node)
                     else:
                         builded_node, idx_get = self.build_AST(idx+1, sub_node) # 子结点build结束，回到当前结点
                     cur_node.content.append(builded_node)
                     idx = idx_get
                     continue
+                # 还有一个特殊的地方在于，expression常常是 a = b, c = d这样的形式，没有一个关键词提示最后一个expression的结束
+                # 这里就让expression撞上下一个clause的开头，作为expression的结束
+                elif par_cls_level == AST_KEYWORDS.EXPRESSION and cur_cls_level == AST_KEYWORDS.CLAUSE:
+                    return cur_node, idx
                 # 除此之外，当前关键词和自己的等级跨度不应超过1，这时说明出现错误
                 else:
                     raise Exception(f"Current node level is {cur_node.attribute}, but the word level is {cur_cls_level}")
@@ -104,7 +130,7 @@ class AST:
             if isinstance(cur_list_i, _clause) or isinstance(cur_list_i, _expression):
                 level = "level:" + str(cur_list_i.attribute)
                 item = _pre + str(cur_list_i.value)
-                print(f"{item:<50} {level:<40}")
+                print(f"{item:<60} {level:<50}")
                 self.pprint_impl(depth=depth+1, cur_list=cur_list_i.content, _pre=_pre+'--')
             else:
                 print(f"{_pre} {cur_list_i}")
@@ -113,12 +139,18 @@ class AST:
             
 
 if __name__ == "__main__":
-    sql = """
+    sql1 = """
     SELECT id, name, this
-    FROM table1
-    WHERE id = 1 AND this < 2.3;
+    FROM table1, table2
+    WHERE id = 1 AND "this" < 2.3;
     """
-    a = AST(sql)
+    sql2 = """
+    UPDATE table1
+    SET alexa = 50000, country='USA', salary = 14.5
+    WHERE id = 1 AND this < 2.3 OR name>1;
+    """
+
+    a = AST(sql2)
     # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
     # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
     # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行

@@ -53,16 +53,16 @@ WHERE id = 1 AND this < 2.3;
 
 - [ ] 对CREATE的实现
 
-- [ ] 对UPDATE的实现
+- [x] 对UPDATE的实现
 
 - [ ] 对主键`PRIMARY`的实现
 
 - [ ] 对非空`NOT NULL`的实现
 
 
-**目前已部分完成，只到能够解析查询命令（SELECT）的地方**
+**目前已部分完成，只到能够解析查询命令（SELECT）与更新命令（UPDATE）的地方**
 
-输入：
+输入1：
 ```
 SELECT id, name, this
 FROM table1
@@ -110,7 +110,7 @@ statements: [
 ]
 ```
 
-**实际输出**：
+**实际输出1**：
 （可以看到`WHERE`被利用了两次，一次是作为`CLAUSE`，一次是作为`EXPRESSION`）
 ```
 SELECT                                             level:AST_KEYWORDS.CLAUSE
@@ -124,6 +124,43 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 ---- {'left': 'id', 'op': '=', 'right': 1}
 --AND                                              level:AST_KEYWORDS.EXPRESSION
 ---- {'left': 'this', 'op': '<', 'right': 2.3}
+```
+
+
+输入2：
+```
+UPDATE table1
+SET alexa = 50000, country='USA', salary = 14.5
+WHERE id = 1 AND this < 2.3 OR name>1;
+```
+
+**实际输出2**：
+```
+UPDATE                                                       level:AST_KEYWORDS.CLAUSE
+
+-- table1
+SET                                                          level:AST_KEYWORDS.CLAUSE
+
+--SET                                                        level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'alexa', 'op': '=', 'right': 50000}
+--SET                                                        level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'country', 'op': '=', 'right': 'USA'}
+--SET                                                        level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'salary', 'op': '=', 'right': 14.5}
+WHERE                                                        level:AST_KEYWORDS.CLAUSE
+
+--WHERE                                                      level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'id', 'op': '=', 'right': 1}
+--AND                                                        level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'this', 'op': '<', 'right': 2.3}
+--OR                                                         level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'name', 'op': '>', 'right': 1}
 ```
 
 **用语解释**：
