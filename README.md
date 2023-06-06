@@ -53,14 +53,17 @@ WHERE id = 1 AND this < 2.3;
 
 - [ ] 对CREATE的实现
 
-- [x] 对UPDATE的实现
-
 - [ ] 对主键`PRIMARY`的实现
 
 - [ ] 对非空`NOT NULL`的实现
 
+- [x] 对UPDATE的实现
 
-**目前已部分完成，只到能够解析查询命令（SELECT）与更新命令（UPDATE）的地方**
+- [x] 对DELETE的实现
+
+
+
+**目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）与删除命令（DELETE）的地方**
 
 输入1：
 ```
@@ -163,11 +166,37 @@ WHERE                                                        level:AST_KEYWORDS.
 ---- {'left': 'name', 'op': '>', 'right': 1}
 ```
 
+输入3：
+```
+DELETE table1
+WHERE id = 1 AND this < 2.3 OR name>1;
+```
+
+**实际输出3**：
+```
+DELETE                                                       level:AST_KEYWORDS.CLAUSE
+
+WHERE                                                        level:AST_KEYWORDS.CLAUSE
+
+--WHERE                                                      level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'id', 'op': '=', 'right': 1}
+--AND                                                        level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'this', 'op': '<', 'right': 2.3}
+--OR                                                         level:AST_KEYWORDS.EXPRESSION
+
+---- {'left': 'name', 'op': '>', 'right': 1}
+```
+
+
 **用语解释**：
 
 - statement: 需要执行的一条语句，以`;`结尾
 
 - clause: 语句中的子句，一般一个查询的SQL语句可以被分为`select caluse`，`from clause`, `where clause`
+
+- expression: 一个表达式，一定包含一个Operator，常见的有`=`,`>`,`<`。值得注意的是表达式只会包含一个Operator，多个表达式如`WHERE a = 3 AND b = 4`，将会被解析成在名为WHERE的CLAUSE中，包含一个WHERE的EXPRESSION，和一个AND的EXPRESSION
 
 
 
@@ -182,7 +211,11 @@ WHERE                                                        level:AST_KEYWORDS.
 
 - [ ] 完成AST与执行代码关于SELECT的结合
 
-- [ ] 更多
+- [ ] 完成AST与执行代码关于DELETE的结合
+
+- [ ] 完成AST与执行代码关于UPDATE的结合
+
+- [ ] 更多……
 
 ### 2. 目标总览
 
