@@ -42,6 +42,7 @@ class blabla:
 
     def get_tables(self):
         #从FROM clause中获得content
+        #想要获得完整结构，建议于AST_Builder.py的代码最后，在print(show)语句那里打个断点，观察一下show的结构
         table_names = self.clause["FROM"].content
         ret = []
         for table_name_i in table_names:
