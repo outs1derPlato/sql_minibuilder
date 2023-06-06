@@ -1,5 +1,6 @@
 from sql_parse.AST_builder import AST
 from sql_command.DB import DB
+import pandas as pd
 
 class blabla:
     def __init__(self):
@@ -8,6 +9,10 @@ class blabla:
         """
         self.db = DB()
         self.db.create("test",["索引","姓名"], [int,str])
+        test_table = self.db.database['test']['tabledata']
+        flag, test_table = self.db.insert(table=test_table,attributes=["索引"],values=[[23],[24]])
+        flag, test_table = self.db.update(table=test_table,update_rows=None,attributes=["姓名"], values=[["张三"],["王五"]])
+        self.db.database['test']['tabledata'] = test_table
     
     def ast_clear(self):
         """
@@ -36,8 +41,17 @@ class blabla:
         self.ast_clear()
         # 获取当前语句的AST
         self.extract(text)
+        # 确定当前是什么类型的语句
+        # 如果以SELECT开头，那么就是查询语句
+        # 正确写法是：if "SELECT" == self.ast.content[0].value
+        # 下面的写法对于简单语句成立，但对于复杂语句例如
+        # UPDATE (SELECT * FROM test) SET id = 1 不成立
+        if "SELECT" in self.clause.keys():
+            self.execute_query_statement()
+
+    def execute_query_statement(self):
         # 示例用，演示怎么从AST的解析中获取table
-        tables = self.get_tables()
+        tables : list[pd.DataFrame] = self.get_tables()
         print(tables)
 
     def get_tables(self):

@@ -23,7 +23,7 @@ class _clause:
 
     def deal(self, cls, value):
         """
-        对于一个非关键词的token，根据自己clause的类型，将其加入到自己的内容中
+        对于一个非关键词的token，根据自己的类型，将其加入到自己的内容中
         """
         # 当前columns的类型决定其会记录columns
         if self.value in ["SELECT"]: 
