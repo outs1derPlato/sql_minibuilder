@@ -1,4 +1,4 @@
-~~目前只需要改commands/DB.py就行了~~
+~~目前只需要改command/DB.py就行了~~
 
 commands中的执行功能都差不多写完了，tokenize已完成，AST写了一点
 
@@ -201,11 +201,11 @@ WHERE                                                        level:AST_KEYWORDS.
 
 
 
-#### 1.3 在AST基础上，实现对`sql_commands`的调用，完成语句
+#### 1.3 在AST基础上，实现对`sql_command`的调用，完成语句
 
-文件：`sql_commands/main.py`（示例用，之后可能会改）
+文件：`sql_control/main.py`（示例用，之后可能会改）
 
-- [x] 完成示例文件，演示如何结合AST与实现的`sql_commands`，通过FROM语句获得databse中的表
+- [x] 完成示例文件，演示如何结合AST与实现的`sql_command`，通过FROM语句获得databse中的表
 
 - [ ] 完成AST与执行代码关于WHERE的结合
 

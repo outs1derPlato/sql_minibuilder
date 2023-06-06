@@ -19,7 +19,7 @@ class blabla:
 
     def extract(self,text:str):
         """
-        获取不同clause（子句）的内容
+        从text中解析出AST，并且获取不同clause（子句）的内容
         """
         # 根据text，生成AST（这里AST只实现了SELECT查询）
         self.ast = AST(sql).content
@@ -36,7 +36,7 @@ class blabla:
         self.ast_clear()
         # 获取当前语句的AST
         self.extract(text)
-        # 示例用，演示怎么从AST解析后的树中获取table
+        # 示例用，演示怎么从AST的解析中获取table
         tables = self.get_tables()
         print(tables)
 
