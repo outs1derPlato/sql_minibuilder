@@ -21,14 +21,13 @@ class AST:
             ret.append((ttype, value))
         self.token_stream = ret
     
-    def get_level(self, cls, value, revisited = False):
+    def get_level(self, value, par_value):
         """
-        根据cls，判断当前找到的关键词在AST中的层级
+        根据当前结点level，以及当前关键词的class，决定此token在AST中的层级
         """
-        if value == "WHERE":
-            pass
-        if value == "WHERE" and revisited:
-            return AST_KEYWORDS.EXPRESSION
+        if par_value == "WHERE":
+            if value == "WHERE":
+                return AST_KEYWORDS.EXPRESSION
         if value in ["WHERE","FROM","SELECT"]:
             return AST_KEYWORDS.CLAUSE
         if value in ["AND", "OR"]:
@@ -65,19 +64,21 @@ class AST:
 
             # 如果当前token特殊，为关键字
             else:
-                cur_cls_level = self.get_level(cls,value.upper(),revisited)
+                # 判断当前token的层级
+                par_cls_level = cur_node.attribute
+                cur_cls_level = self.get_level(value=value.upper(),par_value=cur_node.value)
                 # 如果当前找到的关键词与自己同级，例如：
-                # 如果自己就是一个clause，那么说明现在遇到下一个clause的开头了，终止当前clause
-                if(cur_node.attribute == cur_cls_level):
+                # 如果自己就是一个clause，现在遇到下一个clause的开头，那么便终止当前clause
+                if(par_cls_level == cur_cls_level):
                     return cur_node, idx # 返回的内容，一是在这个范围内build的结果，一个是处理到的idx
                 # 如果当前找到的关键词比自己低级，例如：
                 # 如果自己是一个statement(0)，遇到clause(1)说明有子句了，进行子句的build
-                elif(cur_node.attribute == cur_cls_level - 1):
+                elif(par_cls_level == cur_cls_level - 1):
                     sub_node = self.create_node(cur_cls_level)
                     sub_node.value = value.upper()
-                    # print(sub_node.value)
-                    if sub_node.value in ["WHERE"] and cur_node.attribute == AST_KEYWORDS.STATEMENT:
-                        builded_node, idx_get = self.build_AST(idx, sub_node,revisited=True)
+                    # WHERE的特殊性在于，存在WHERE开头的clause，也存在WHERE开头的expression,WHERE需要被走两遍
+                    if sub_node.value in ["WHERE"] and cur_cls_level == AST_KEYWORDS.CLAUSE:
+                        builded_node, idx_get = self.build_AST(idx, sub_node)
                     else:
                         builded_node, idx_get = self.build_AST(idx+1, sub_node) # 子结点build结束，回到当前结点
                     cur_node.content.append(builded_node)
