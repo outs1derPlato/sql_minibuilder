@@ -51,9 +51,9 @@ WHERE id = 1 AND this < 2.3;
 
 - [ ] 对WHERE中AND、OR的正确顺序判断
 
-- [ ] 对CREATE的实现
+- [x] 对CREATE的实现
 
-- [ ] 对主键`PRIMARY`的实现
+- [x] 对主键`PRIMARY`的实现
 
 - [ ] 对非空`NOT NULL`的实现
 
@@ -63,7 +63,7 @@ WHERE id = 1 AND this < 2.3;
 
 
 
-**目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）与删除命令（DELETE）的地方**
+**目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）、删除命令（DELETE）与基础创建命令（CREATE）（不包含NOT NULL）的地方**
 
 输入1：
 ```
@@ -189,6 +189,36 @@ WHERE                                                        level:AST_KEYWORDS.
 ---- {'left': 'name', 'op': '>', 'right': 1}
 ```
 
+输入4：
+```
+CREATE TABLE Persons
+(
+    PersonID SERIAL int,
+    LastName PRIMARY varchar(255),
+    FirstName char(255),
+    Address float,
+    City varchar(255)
+);
+```
+
+
+**实际输出4**:
+```
+CREATE                                                       level:AST_KEYWORDS.CLAUSE
+-- Persons
+COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
+--COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
+---- {'PRIMARY': False, 'name': 'PERSONID', 'type': 'int'}
+--COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
+---- {'PRIMARY': True, 'name': 'LASTNAME', 'type': 'varchar', 'length': 255}
+--COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
+---- {'PRIMARY': False, 'name': 'FIRSTNAME', 'type': 'char', 'length': 255}
+--COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
+---- {'PRIMARY': False, 'name': 'ADDRESS', 'type': 'float'}
+--COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
+---- {'PRIMARY': False, 'name': 'CITY', 'type': 'varchar', 'length': 255}
+```
+
 
 **用语解释**：
 
@@ -214,6 +244,12 @@ WHERE                                                        level:AST_KEYWORDS.
 - [ ] 完成AST与执行代码关于DELETE的结合
 
 - [ ] 完成AST与执行代码关于UPDATE的结合
+
+- [ ] 完成AST与执行代码关于CREATE的基础结合，确定类型
+
+- [ ] 完成AST与执行代码关于CREATE的主键设置
+
+- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，主键的自动更新并插入
 
 - [ ] 更多……
 

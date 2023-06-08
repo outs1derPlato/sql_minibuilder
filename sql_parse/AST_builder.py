@@ -1,12 +1,12 @@
 from sql_parse.tokenizer import tokenizer  
 from sql_parse import tokens
 from sql_parse.ast_def import AST_KEYWORDS
-from sql_parse.ast_def import _statement,_clause,_expression
+from sql_parse.ast_def import _statement,_clause,_expression,_coldef
 
 
 class AST:
     def __init__(self, text = None):
-        self.get_tokens(text)
+        self.get_tokens(text=text)
         new_statement = _statement()
         new_statement.attribute = AST_KEYWORDS.STATEMENT
         self.content , _ = self.build_AST(start_idx=0, cur_node=new_statement)
@@ -51,7 +51,78 @@ class AST:
             return _clause()
         if(level == AST_KEYWORDS.EXPRESSION):
             return _expression()
+        if(level == AST_KEYWORDS.COLUMN_DEFINITION):
+            return _coldef()
     
+    def build_AST_CREATE(self, start_idx = 0, statement_node = None):
+        stream = self.tokens
+        total_idx = len(stream)
+
+        # 第一个必定会存在的clause: value="CREATE",content包含table的名称
+        create_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        create_clause_node.value = "CREATE"
+        statement_node.content.append(create_clause_node)
+
+        # 第二个必定会存在的clause：value="COLUMNS",content包含每一列的定义
+        columns_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        columns_clause_node.value = "COLUMNS"
+        statement_node.content.append(columns_clause_node)
+
+        # 在找到CREATE关键词后，我们希望找的是：CREATE TABLE 表名
+        requireValue = "TABLE"
+        cur_node = create_clause_node
+        idx = start_idx + 1
+
+        pair_level = 0
+
+        while idx < total_idx:
+            cls, value = stream[idx]
+            
+            # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
+            if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
+                cur_node.deal(cls, value)
+
+            # 如果当前token为标点
+            elif cls in tokens.Punctuation:
+                # ()的处理
+                if value in ["(", ")"]:
+                    if value == "(":
+                        pair_level = pair_level + 1
+                    if pair_level == 1 and value == "(":
+                        # 遇到这里，说明读到了CREATE TABLE 表名 ( 的情况，接下来该是新的clause了
+                        if cur_node.value == "CREATE":
+                            cur_coldef_node = self.create_node(AST_KEYWORDS.COLUMN_DEFINITION)
+                            cur_coldef_node.value = "COLUMN_DEFINITION"
+                            columns_clause_node.content.append(cur_coldef_node)
+                            cur_node = cur_coldef_node
+                            requireValue = ","
+                            idx = idx + 1
+                            continue
+                    if pair_level == 1 and value == ")":
+                        # 遇到这里，说明是在希望读取下一个列的时候，发现已经没有更多列了
+                        # 那可真是个天大的喜事，说明读取完成了
+                        return statement_node, idx
+                    if value == ")":
+                        pair_level = pair_level - 1
+                # 逗号的处理
+                if value in [","]:
+                    # 一个列的结束，另一个列的开始
+                    cur_coldef_node = self.create_node(AST_KEYWORDS.COLUMN_DEFINITION)
+                    cur_coldef_node.value = "COLUMN_DEFINITION"
+                    columns_clause_node.content.append(cur_coldef_node)
+                    cur_node = cur_coldef_node
+                    idx = idx + 1
+                    continue
+
+            # 如果当前token特殊，为关键字……（但其实唯一要看的关键字就是TABLE和PRIMARY（目前的话））
+            else:
+                val = value.upper()
+                if val == "TABLE": pass
+                if val == "PRIMARY":
+                    cur_node.content[0]["PRIMARY"] = True
+            idx = idx + 1
+        return statement_node, idx
+
     def build_AST(self, start_idx = 0, cur_node = None):
         stream = self.tokens
         idx = start_idx
@@ -85,6 +156,10 @@ class AST:
 
             # 如果当前token特殊，为关键字
             else:
+                # CREATE的语法区别和其他的差别太大了，放弃兼容性，直接单独处理
+                if value.upper() == "CREATE":
+                    node_create, _ = self.build_AST_CREATE(idx, cur_node)
+                    return  node_create, None
                 # 判断当前token的层级
                 par_cls_level = cur_node.attribute
                 cur_cls_level = self.get_level(value=value.upper(),par_value=cur_node.value)
@@ -127,7 +202,7 @@ class AST:
         pprint的单层实现
         """
         for idx, cur_list_i in enumerate(cur_list):
-            if isinstance(cur_list_i, _clause) or isinstance(cur_list_i, _expression):
+            if isinstance(cur_list_i, _clause) or isinstance(cur_list_i, _expression) or isinstance(cur_list_i,_coldef):
                 level = "level:" + str(cur_list_i.attribute)
                 item = _pre + str(cur_list_i.value)
                 print(f"{item:<60} {level:<50}")
@@ -153,8 +228,17 @@ if __name__ == "__main__":
     DELETE table1
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
-
-    a = AST(sql3)
+    sql4 = """
+    CREATE TABLE Persons
+    (
+        PersonID SERIAL int,
+        LastName PRIMARY varchar(255),
+        FirstName char(255),
+        Address float,
+        City varchar(255)
+    );
+    """
+    a = AST(sql4)
     # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
     # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
     # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行
