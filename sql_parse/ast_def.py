@@ -30,6 +30,8 @@ class _clause:
         if self.value in ["SELECT", "CREATE"]: 
             if cls in tokens.Name:
                 self.content.append(value)
+            elif cls in tokens.Wildcard:
+                self.content.append(tokens.Wildcard)
         # 当前clause的类型决定其会记录tables
         if self.value in ["FROM", "UPDATE"]: 
             if cls in tokens.Name:
@@ -52,7 +54,7 @@ class _expression:
         """
         对于一个非关键词的token，根据自己expression的类型，将其加入到自己的内容中
         """
-        if self.value in ["WHERE", "AND", "OR", "SET"]: 
+        if self.value in ["WHERE", "AND", "OR"]: 
             if cls in tokens.Name or cls in tokens.Literal:
                 if self.content == []: # 左边
                     sub_expr_left = {"left": Numerize(cls,value), "op": None, "right": None}
@@ -61,11 +63,27 @@ class _expression:
                     self.content[0]["right"] = Numerize(cls,value)
             if cls in tokens.Operator: # 中间的Operator
                 self.content[0]["op"] = value
+        if self.value in ["SET"]:
+            if cls in tokens.Name or cls in tokens.Literal:
+                if self.content == []: # 左边
+                    sub_expr_left = {"assignment": Numerize(cls,value), "expression": None}
+                    self.content.append(sub_expr_left)
+                else: # 右边
+                    if self.content[0]["expression"] == None:
+                        self.content[0]["expression"] = dict()
+                        self.content[0]["expression"]["left"] = Numerize(cls,value)
+                    else:
+                        self.content[0]["expression"]["right"] = Numerize(cls,value)
+            if cls in tokens.Operator or cls in tokens.Wildcard: # 中间的Operator,Wildcard是指*
+                if self.content[0]["expression"] == None:
+                    pass
+                else:
+                    self.content[0]["expression"]["op"] = value
 
 class _coldef:
     def __init__(self):
         self.attribute = AST_KEYWORDS.COLUMN_DEFINITION
-        self.content = [{"PRIMARY":False}]
+        self.content = [{"PRIMARY":False,"NOT NULL":False}]
 
     def deal(self, cls, value):
         """

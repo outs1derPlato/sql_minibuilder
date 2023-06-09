@@ -120,6 +120,8 @@ class AST:
                 if val == "TABLE": pass
                 if val == "PRIMARY":
                     cur_node.content[0]["PRIMARY"] = True
+                if val == "NOT NULL":
+                    cur_node.content[0]["NOT NULL"] = True
             idx = idx + 1
         return statement_node, idx
 
@@ -129,6 +131,9 @@ class AST:
         total_idx = len(stream)
         while idx < total_idx:
             cls, value = stream[idx]
+
+            if value == "*":
+                pass
 
             # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
             if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
@@ -221,7 +226,7 @@ if __name__ == "__main__":
     """
     sql2 = """
     UPDATE table1
-    SET alexa = 50000, country='USA', salary = 14.5
+    SET alexa = 50000, country='USA', salary = salary * 14.5
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
     sql3 = """
@@ -233,12 +238,17 @@ if __name__ == "__main__":
     (
         PersonID SERIAL int,
         LastName PRIMARY varchar(255),
-        FirstName char(255),
+        FirstName char(255) NOT NULL,
         Address float,
         City varchar(255)
     );
     """
-    a = AST(sql4)
+    sql5 = """
+    SELECT *
+    FROM table1, table2
+    WHERE id = 1 AND "this" < 2.3;
+    """
+    a = AST(sql5)
     # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
     # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
     # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行

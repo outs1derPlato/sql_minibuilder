@@ -43,24 +43,33 @@ WHERE id = 1 AND this < 2.3;
 
 完成情况：
 
-- [x] 对SELECT的实现
+- [x] 对SELECT的解析
 
-- [X] 对FROM的实现
+- [X] 对FROM的解析
 
-- [x] 对WHERE的基础实现
+- [x] 对WHERE的基础解析
 
 - [ ] 对WHERE中AND、OR的正确顺序判断
 
-- [x] 对CREATE的实现
+- [x] 对CREATE的解析
 
-- [x] 对主键`PRIMARY`的实现
+- [x] 对SET的解析
 
-- [ ] 对非空`NOT NULL`的实现
+- [x] 对UPDATE的解析
 
-- [x] 对UPDATE的实现
+- [x] 对DELETE的解析
 
-- [x] 对DELETE的实现
+##### 星期五添加
 
+- [x] 对SELECT时`WILDCARD`的解析（就是选中所有列，详见输入输出5）
+
+- [x] 对CREATE时主键`PRIMARY`的解析
+
+- [x] 对CREATE时非空`NOT NULL`的解析
+
+- [x] 对SET赋值式右边的Binary Expression的解析（抱歉的是SET时的expression结构也换了，换成assignment了，详见输出2）
+
+- [ ] 对INSERT INTO的解析
 
 
 **目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）、删除命令（DELETE）与基础创建命令（CREATE）（不包含NOT NULL）的地方**
@@ -133,36 +142,27 @@ WHERE                                              level:AST_KEYWORDS.CLAUSE
 输入2：
 ```
 UPDATE table1
-SET alexa = 50000, country='USA', salary = 14.5
+SET alexa = 50000, country='USA', salary = salary * 14.5
 WHERE id = 1 AND this < 2.3 OR name>1;
 ```
 
 **实际输出2**：
 ```
-UPDATE                                                       level:AST_KEYWORDS.CLAUSE
-
+UPDATE                                                       level:AST_KEYWORDS.CLAUSE                          
 -- table1
 SET                                                          level:AST_KEYWORDS.CLAUSE
-
 --SET                                                        level:AST_KEYWORDS.EXPRESSION
-
----- {'left': 'alexa', 'op': '=', 'right': 50000}
+---- {'assignment': 'alexa', 'expression': {'left': 50000}}
 --SET                                                        level:AST_KEYWORDS.EXPRESSION
-
----- {'left': 'country', 'op': '=', 'right': 'USA'}
+---- {'assignment': 'country', 'expression': {'left': 'USA'}}
 --SET                                                        level:AST_KEYWORDS.EXPRESSION
-
----- {'left': 'salary', 'op': '=', 'right': 14.5}
+---- {'assignment': 'salary', 'expression': {'left': 'salary', 'op': '*', 'right': 14.5}}
 WHERE                                                        level:AST_KEYWORDS.CLAUSE
-
 --WHERE                                                      level:AST_KEYWORDS.EXPRESSION
-
 ---- {'left': 'id', 'op': '=', 'right': 1}
 --AND                                                        level:AST_KEYWORDS.EXPRESSION
-
 ---- {'left': 'this', 'op': '<', 'right': 2.3}
 --OR                                                         level:AST_KEYWORDS.EXPRESSION
-
 ---- {'left': 'name', 'op': '>', 'right': 1}
 ```
 
@@ -195,7 +195,7 @@ CREATE TABLE Persons
 (
     PersonID SERIAL int,
     LastName PRIMARY varchar(255),
-    FirstName char(255),
+    FirstName char(255) NOT NULL,
     Address float,
     City varchar(255)
 );
@@ -208,15 +208,36 @@ CREATE                                                       level:AST_KEYWORDS.
 -- Persons
 COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
 --COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
----- {'PRIMARY': False, 'name': 'PERSONID', 'type': 'int'}
+---- {'PRIMARY': False, 'NOT NULL': False, 'name': 'PERSONID', 'type': 'int'}
 --COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
----- {'PRIMARY': True, 'name': 'LASTNAME', 'type': 'varchar', 'length': 255}
+---- {'PRIMARY': True, 'NOT NULL': False, 'name': 'LASTNAME', 'type': 'varchar', 'length': 255}
 --COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
----- {'PRIMARY': False, 'name': 'FIRSTNAME', 'type': 'char', 'length': 255}
+---- {'PRIMARY': False, 'NOT NULL': True, 'name': 'FIRSTNAME', 'type': 'char', 'length': 255}
 --COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
----- {'PRIMARY': False, 'name': 'ADDRESS', 'type': 'float'}
+---- {'PRIMARY': False, 'NOT NULL': False, 'name': 'ADDRESS', 'type': 'float'}
 --COLUMN_DEFINITION                                          level:AST_KEYWORDS.COLUMN_DEFINITION
----- {'PRIMARY': False, 'name': 'CITY', 'type': 'varchar', 'length': 255}
+---- {'PRIMARY': False, 'NOT NULL': False, 'name': 'CITY', 'type': 'varchar', 'length': 255}
+```
+
+输入5：（与输入1相比，SELECT所有列）：
+```
+SELECT *
+FROM table1, table2
+WHERE id = 1 AND "this" < 2.3;
+```
+
+**实际输出5**：
+```
+SELECT                                                       level:AST_KEYWORDS.CLAUSE
+-- Token.Wildcard
+FROM                                                         level:AST_KEYWORDS.CLAUSE
+-- table1
+-- table2
+WHERE                                                        level:AST_KEYWORDS.CLAUSE
+--WHERE                                                      level:AST_KEYWORDS.EXPRESSION
+---- {'left': 'id', 'op': '=', 'right': 1}
+--AND                                                        level:AST_KEYWORDS.EXPRESSION
+---- {'left': 'this', 'op': '<', 'right': 2.3}
 ```
 
 
@@ -245,11 +266,17 @@ COLUMNS                                                      level:AST_KEYWORDS.
 
 - [ ] 完成AST与执行代码关于UPDATE的结合
 
-- [ ] 完成AST与执行代码关于CREATE的基础结合，确定类型
+##### 星期五添加的
 
-- [ ] 完成AST与执行代码关于CREATE的主键设置
+- [ ] 完成AST与执行代码关于SELECT的WILDCARD设置（也就是选中所有列，详见输入5，输出5）
 
-- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，主键的自动更新并插入
+- [ ] 完成AST与执行代码关于SET的右侧赋值式结合
+
+- [ ] 完成AST与执行代码关于CREATE的基础结合，限制每一列的类型
+
+- [ ] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
+
+- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入（当然还没做INSERT）
 
 - [ ] 更多……
 
