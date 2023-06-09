@@ -14,3 +14,4 @@ sql_command/__pycache__/DB.cpython-310.pyc
 pyrightconfig.json
 .vscode/launch.json
 .vscode
+data/Persons.db_mini

@@ -1,5 +1,9 @@
 import pandas as pd
 
+
+import os
+data_folder = 'data'
+
 class DB:
     def __init__(self):
         self.dbtypes=dict[dict['tablename':str,'tabledata':pd.DataFrame,'datatypes':dict,'not_null_flag':dict,'primary_key':str,'attri_len':dict]]
@@ -11,6 +15,7 @@ class DB:
         #访问某个表中某个(这里仅考虑char varchar类型)属性设定的长度 ：database['表名']['attri_len']['属性名']
         #primary: database['表名']['primary_key']['属性名']
 
+
     def create(self,
                 table: str,
                 attributes: list[str],
@@ -20,9 +25,10 @@ class DB:
                 char_attri: list[str],
                 char_attri_len: list[int]) -> bool:
         #检查表是否已经存在
-        if table in self.database:
-            print(f"Table '{table}' already exists.")
-            return False
+        pkl_path = data_folder + "/" + table + '.db_mini'
+
+        if os.path.exists(pkl_path) or table in self.database:
+            raise Exception(f"Table '{table}' already exists.")
 
         #创建一个新表
         newtable = {

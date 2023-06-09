@@ -6,8 +6,7 @@ import pickle
 
 from sql_parse.tokens import Token
 
-# data_folder = '../data'
-# file_names = os.listdir(data_folder)
+data_folder = 'data'
 
 
 class blabla:
@@ -16,6 +15,7 @@ class blabla:
         示例用
         """
         self.db = DB()
+
         # 外部数据读取 test
         # for file_name in file_names:
         #     if file_name.endswith('.csv'):
@@ -23,6 +23,17 @@ class blabla:
         #         file_path = data_folder + '/' + file_name
         #         data_table = pd.read_csv(file_path)
         #         self.dict[var_name] = data_table
+    
+    def pickle_save(self, name):
+        path = data_folder + '/' + name + '.db_mini'
+        with open(path, "wb") as f:
+            pickle.dump(self.db.database[name], f)
+
+    def pickle_load(self, name):
+        path = data_folder + '/' + name + '.db_mini'
+        with open(path, "rb") as f:
+            table_load = pickle.load(f)
+        self.db.database[name] = table_load
 
     def ast_clear(self):
         """
@@ -59,6 +70,9 @@ class blabla:
             tables = self.get_tables(function)
             cols = self.get_col()
             for table in tables:
+
+                self.pickle_load(table)
+
                 cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
                 result = self.db.select(cur_table['tabledata'], cols, rows) if Token.Wildcard not in cols else self.db.select(cur_table['tabledata'], cur_table['tabledata'].columns, rows)
@@ -68,6 +82,9 @@ class blabla:
         elif function == 'UPDATE':
             tables = self.get_tables(function)
             for table in tables:
+
+                self.pickle_load(table)
+
                 cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
                 for up in self.clause["SET"].content:
@@ -80,11 +97,15 @@ class blabla:
                     else:
                         value = self.get_val(table, up.content[0]['expression'], rows)
                     self.db.update(cur_table['tabledata'], update_rows=rows, attributes=[up.content[0]['assignment']], values=value)
+                self.pickle_save(table)
 
         # 添加
         elif function == 'INSERT':
             tables = self.get_tables(function)
             for table in tables:
+                
+                self.pickle_load(table)
+
                 cols = self.clause["COLUMNS"].content
                 values_clauses = self.ast.content[2:]
                 cur_table = self.db.database[table]
@@ -101,14 +122,21 @@ class blabla:
                     self.check_primary(cur_table['tabledata'],cur_table['primary_key'],cols,values)
                     values_for_insert.append(values)
                 _, cur_table['tabledata'] = self.db.insert(cur_table['tabledata'], cols, values_for_insert)
+                
+                self.pickle_save(table)
 
         # 删除
         elif function == 'DELETE':
             tables = self.get_tables(function)
             for table in tables:
+
+                self.pickle_load(table)
+
                 cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
                 self.db.delete(cur_table['tabledata'], del_rows=rows)
+
+                self.pickle_save(table)
 
         # 创建新表
         elif function == 'CREATE':
@@ -120,13 +148,16 @@ class blabla:
             # 目前是这么设计的
             assert len(tables) == 1
             table = tables[0]
+            self.pickle_load(table)
             del self.db.database[table]
+            os.remove(data_folder + '/' + table + '.db_mini')
         
         elif function == 'TRUNCATE':
             tables = self.get_tables(function)
             # 目前是这么设计的
             assert len(tables) == 1
             table = tables[0]
+            self.pickle_load(tables)
             self.db.truncate(self.db.database[table]['tabledata'])
 
         else:
@@ -179,14 +210,6 @@ class blabla:
         """
         if len(cols) != len(values):
             raise Exception(f"Number of columns is {len(cols)}, but {len(values)} is given.")
-
-    
-    def save_tables(self):
-        """
-        简单计划：用pickle来存储表
-        """
-        # 待实现
-        pass
 
     # 判断功能
     def funct(self):
@@ -283,6 +306,7 @@ class blabla:
             # print(self.db.database[table])
         else:
             print("创建失败!")
+        self.pickle_save(table)
 
 
 if __name__ == "__main__":
@@ -308,9 +332,9 @@ if __name__ == "__main__":
     sql2 = """
     INSERT INTO Persons (PersonID,LastName, Address, City)
     VALUES (
-        (3,'my', 2.3, "this"),
-        (4,'she', 5.6, "7"),
-        (5,'thistsdas',1.1,"9")
+        (4,'my', 2.3, "this"),
+        (5,'she', 5.6, "7"),
+        (6,'thistsdas',1.1,"9")
     );
     """
     a.execute(sql2)
@@ -318,77 +342,77 @@ if __name__ == "__main__":
     print("="*20)
     print("="*20)
 
-    # 更新
-    sql3 = """
-    UPDATE Persons
-    SET Address = Address * 1.1
-    WHERE PersonID >= 2
-    """
-    a.execute(sql3)
-    print(a.db.database["Persons"]['tabledata'])
-    print("="*20)
-    print("="*20)
-
-    # 查询
-    sql4 = """
-        SELECT *
-        FROM Persons
-        WHERE PersonID >= 4
-        """
-    a.execute(sql4)
-    print("=" * 20)
-    print("=" * 20)
-
-    sql5 = """
-        TRUNCATE TABLE Persons;
-    """
-    a.execute(sql5)
-    print(a.db.database["Persons"]['tabledata'])
-
-    # print(a.db.database["Persons"]['datatypes'])
-    # print(a.db.database["Persons"]['not_null_flag'])
-    # print(a.db.database["Persons"]['primary_key'])
-    # a = blabla()
-    # sql1 = """
-    #     SELECT id, name
-    #     FROM test2
-    #     WHERE id >= 2 AND this < 3.1 OR this2 = 13 AND id = 1;
-    #     """
-    # a.execute(sql1)
-
-    # sql2 = """
-    #     UPDATE test2
-    #     SET this2 = 100, name = 'Li Si', this = this * 1.1
-    #     WHERE id >= 2 AND this2 < 13;
-    #     """
-    # a.execute(sql2)
-
+    # # 更新
     # sql3 = """
-    #     SELECT id, name, this, this2
-    #     FROM test2
-    #     """
+    # UPDATE Persons
+    # SET Address = Address * 1.1
+    # WHERE PersonID >= 2
+    # """
     # a.execute(sql3)
+    # print(a.db.database["Persons"]['tabledata'])
+    # print("="*20)
+    # print("="*20)
 
+    # # 查询
     # sql4 = """
-    #         DELETE FROM test2
-    #         WHERE id = 1
-    #         """
+    #     SELECT *
+    #     FROM Persons
+    #     WHERE PersonID >= 4
+    #     """
     # a.execute(sql4)
-    # a.execute(sql3)
+    # print("=" * 20)
+    # print("=" * 20)
 
     # sql5 = """
-    #         SELECT *
-    #         FROM test
-    #         WHERE gender = Female;
-    #         """
+    #     DROP TABLE Persons;
+    # """
     # a.execute(sql5)
+    # print(a.db.database["Persons"]['tabledata'])
 
-    # sql6 = """
-    #         UPDATE test
-    #         SET salary = salary * 1.2
-    #         WHERE id = 1 OR id = 2 OR id = 5;
-    #         """
-    # a.execute(sql6)
+    # # print(a.db.database["Persons"]['datatypes'])
+    # # print(a.db.database["Persons"]['not_null_flag'])
+    # # print(a.db.database["Persons"]['primary_key'])
+    # # a = blabla()
+    # # sql1 = """
+    # #     SELECT id, name
+    # #     FROM test2
+    # #     WHERE id >= 2 AND this < 3.1 OR this2 = 13 AND id = 1;
+    # #     """
+    # # a.execute(sql1)
 
-    # sql7 = """SELECT * FROM test"""
-    # a.execute(sql7)
+    # # sql2 = """
+    # #     UPDATE test2
+    # #     SET this2 = 100, name = 'Li Si', this = this * 1.1
+    # #     WHERE id >= 2 AND this2 < 13;
+    # #     """
+    # # a.execute(sql2)
+
+    # # sql3 = """
+    # #     SELECT id, name, this, this2
+    # #     FROM test2
+    # #     """
+    # # a.execute(sql3)
+
+    # # sql4 = """
+    # #         DELETE FROM test2
+    # #         WHERE id = 1
+    # #         """
+    # # a.execute(sql4)
+    # # a.execute(sql3)
+
+    # # sql5 = """
+    # #         SELECT *
+    # #         FROM test
+    # #         WHERE gender = Female;
+    # #         """
+    # # a.execute(sql5)
+
+    # # sql6 = """
+    # #         UPDATE test
+    # #         SET salary = salary * 1.2
+    # #         WHERE id = 1 OR id = 2 OR id = 5;
+    # #         """
+    # # a.execute(sql6)
+
+    # # sql7 = """SELECT * FROM test"""
+    # # a.execute(sql7)
