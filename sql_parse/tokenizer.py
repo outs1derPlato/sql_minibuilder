@@ -4,6 +4,7 @@ import itertools
 from sql_parse import tokens, keywords
 import regex as re
 
+
 class tokenizer:
     def set_SQL_REGEX(self, SQL_REGEX):
         """
@@ -39,7 +40,7 @@ class tokenizer:
                 return kwdict[val], value
         else:
             return tokens.Name, value
-    
+
     def consume(self,iterator, n):
         """
         将迭代器向后推动n个位置，即跳过n个元素，这里是为了在匹配到字符为token后，跳过已匹配部分

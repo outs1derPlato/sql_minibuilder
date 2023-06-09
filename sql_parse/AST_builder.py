@@ -36,11 +36,11 @@ class AST:
         if par_value == "SET":
             if value == "SET":
                 return AST_KEYWORDS.EXPRESSION
-        if value in ["WHERE","FROM","SELECT","UPDATE","SET", "DELETE"]:
+        if value in ["WHERE", "FROM", "SELECT", "UPDATE", "SET", "DELETE"]:
             return AST_KEYWORDS.CLAUSE
         if value in ["AND", "OR"]:
             return AST_KEYWORDS.EXPRESSION
-    
+
     def create_node(self, level):
         """
         根据在AST中的层级，创建对应实例
@@ -136,8 +136,6 @@ class AST:
                 print(f"{_pre} {cur_list_i}")
 
 
-            
-
 if __name__ == "__main__":
     sql1 = """
     SELECT id, name, this
@@ -154,7 +152,7 @@ if __name__ == "__main__":
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
 
-    a = AST(sql3)
+    a = AST(sql1)
     # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
     # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
     # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行
@@ -164,4 +162,4 @@ if __name__ == "__main__":
     # 现在来看这部分有点困难，先不要动为好
     a.pprint()
     show = a.content
-    print("\n\n",show)
+    print("\n\n", show)

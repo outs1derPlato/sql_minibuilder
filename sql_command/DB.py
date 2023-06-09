@@ -1,23 +1,24 @@
 import pandas as pd
 
+
 class DB:
     def __init__(self):
-        self.dbtypes=dict[dict['tablename':str,'tabledata':pd.DataFrame,'datatypes':dict]]
+        self.dbtypes=dict[dict['tablename':str, 'tabledata':pd.DataFrame, 'datatypes':dict]]
         self.database = {}
-        #访问某个表用 database['表名']
-        #访问某个表中的数据用 database['表名']['tabledata'] 这是一个pd.DataFrame型的数据
-        #访问某个表中某个属性的数据类型用 database['表名']['datatypes']['属性名']
+        # 访问某个表用 database['表名']
+        # 访问某个表中的数据用 database['表名']['tabledata'] 这是一个pd.DataFrame型的数据
+        # 访问某个表中某个属性的数据类型用 database['表名']['datatypes']['属性名']
 
     def create(self,
                 table: str,
                 attributes: list[str],
                 types: list[str]) -> bool:
-        #检查表是否已经存在
+        # 检查表是否已经存在
         if table in self.database:
             print(f"Table '{table}' already exists.")
             return False
 
-        #创建一个新表
+        # 创建一个新表
         newtable = {
             'tablename': table,
             'tabledata': pd.DataFrame(columns=attributes),
@@ -26,7 +27,6 @@ class DB:
         #数据库添加新表
         self.database[table] = newtable
         return True
-
 
     def select(self,
                 table: pd.DataFrame,       # 输入的表
@@ -73,7 +73,7 @@ class DB:
             return True
         #否则返回False，即操作失败
         return False
-    
+
     def insert(self,
             table: pd.DataFrame,
             attributes: list[str],
@@ -133,9 +133,9 @@ class DB:
 if __name__ == "__main__":
     # 读取数据
     a = DB()
-    a.create("test",["索引","姓名"], [int,str])
+    a.create("test", ["索引", "姓名"], [int,str])
     test_table = a.database['test']['tabledata']
-    flag, test_table = a.insert(table=test_table,attributes=["索引"],values=[[23],[24]])
+    flag, test_table = a.insert(table=test_table, attributes=["索引"], values=[[23],[24]])
     print(test_table)
 
     #更新test表

@@ -1,10 +1,12 @@
 from sql_parse import tokens
 import enum
 
+
 class AST_KEYWORDS(enum.IntEnum):
     STATEMENT = 0
     CLAUSE = 1
     EXPRESSION = 2
+
 
 class _statement:
     def __init__(self):
@@ -15,6 +17,7 @@ class _statement:
     def deal(self, cls, value):
         if cls in tokens.Name:
             self.content.append(value)
+
 
 class _clause:
     def __init__(self):
@@ -41,6 +44,7 @@ class _clause:
         if self.value in ["WHERE"]: 
             if cls in tokens.Name:
                 raise Exception("WHERE clause should not read non-keyword token\n Only WHERE expression do")
+
 
 class _expression:
     def __init__(self):
