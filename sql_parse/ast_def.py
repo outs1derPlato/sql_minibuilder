@@ -34,7 +34,7 @@ class _clause:
             elif cls in tokens.Wildcard:
                 self.content.append(tokens.Wildcard)
         # 当前clause的类型决定其会记录tables
-        if self.value in ["FROM", "UPDATE", "INSERT"]: 
+        if self.value in ["FROM", "UPDATE", "INSERT", "DROP"]: 
             if cls in tokens.Name:
                 self.content.append(value)
         # 当前clause的类型决定其会记录values，但并不是表达式
