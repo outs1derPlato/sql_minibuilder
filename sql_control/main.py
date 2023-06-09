@@ -15,6 +15,7 @@ class blabla:
         示例用
         """
         self.db = DB()
+
         self.dict ={}
 
         # 外部数据读取 test
@@ -36,6 +37,7 @@ class blabla:
 
         print('原表test：\n', self.dict['test'], '\n')
         print('原表test2：\n', self.dict['test2'], '\n')
+
 
     def ast_clear(self):
         """
@@ -172,10 +174,30 @@ class blabla:
             table_names = self.clause["UPDATE"].content
         # ret = []
         # for table_name_i in table_names:
-            # 调用sql_commands中实现的方法，访问得到每个table的DataFrame
-            # table = self.db.database[table_name_i]['tabledata']
-            # ret.append(table)
-        return table_names
+    
+    def excute_create_statement(self):
+        table = self.clause["CREATE"].content[0]
+        attribute_ls = []
+        types_ls = []
+        not_null_ls = []
+        primary_key_ls = []
+        char_attri_ls = []
+        char_attri_len_ls = []
+        for i in range(len(self.clause["COLUMNS"].content)):
+            attribute_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
+            types_ls.append(self.clause["COLUMNS"].content[i].content[0]["type"])
+            if (self.clause["COLUMNS"].content[i].content[0]["type"]=="char") or (self.clause["COLUMNS"].content[i].content[0]["type"]=="varchar"):
+                 char_attri_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
+                 char_attri_len_ls.append(self.clause["COLUMNS"].content[i].content[0]["length"])
+            not_null_ls.append(self.clause["COLUMNS"].content[i].content[0]["PRIMARY"])
+            if self.clause["COLUMNS"].content[i].content[0]["PRIMARY"]:
+                primary_key_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
+        if self.db.create(table=table, attributes=attribute_ls, types=types_ls, not_null=not_null_ls, primary_key=primary_key_ls,char_attri=char_attri_ls,char_attri_len=char_attri_len_ls):
+            print("创建成功!")
+            print(self.db.database[table]["not_null_flag"])
+        else:
+            print("创建失败!")
+
 
 
 if __name__ == "__main__":

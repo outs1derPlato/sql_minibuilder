@@ -49,7 +49,7 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对WHERE的基础解析
 
-- [ ] 对WHERE中AND、OR的正确顺序判断
+- [x] 对WHERE中AND、OR的正确顺序判断
 
 - [x] 对SET的解析
 
@@ -65,13 +65,13 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对CREATE时非空`NOT NULL`的解析
 
-- [ ] 对CREATE各种约束的解析
+- [ ] 对CREATE各种约束的解析（摆，不想做，因为外键有点麻烦）
 
 - [x] 对SET赋值式右边的Binary Expression的解析（抱歉的是SET时的expression结构也换了，换成assignment了，详见输出2）
 
 - [x] 对CREATE的解析
 
-- [ ] 对INSERT INTO的解析
+- [x] 对INSERT INTO的解析
 
 
 **目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）、删除命令（DELETE）与基础创建命令（CREATE）（不包含NOT NULL）的地方**
@@ -242,6 +242,43 @@ WHERE                                                        level:AST_KEYWORDS.
 ---- {'left': 'this', 'op': '<', 'right': 2.3}
 ```
 
+输入6：
+```
+INSERT INTO table1 (id, name, this)
+VALUES (1, 'alex', 2.3);
+```
+
+**实际输出6**：
+```
+INSERT                                                       level:AST_KEYWORDS.CLAUSE
+-- table1
+COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
+-- id
+-- name
+-- this
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 1
+-- alex
+-- 2.3
+```
+
+输入7：（与输入6的区别在于，INSERT INTO未指定表名）
+```
+INSERT INTO table1
+VALUES (1, 'alex', 2.3);
+```
+
+**实际输出7**
+```
+INSERT                                                       level:AST_KEYWORDS.CLAUSE
+-- table1
+COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 1
+-- alex
+-- 2.3
+```
+
 
 **用语解释**：
 
@@ -260,27 +297,33 @@ WHERE                                                        level:AST_KEYWORDS.
 
 - [x] 完成示例文件，演示如何结合AST与实现的`sql_command`，通过FROM语句获得databse中的表
 
-- [ ] 完成AST与执行代码关于WHERE的结合
+- [x] 完成AST与执行代码关于WHERE的结合
 
-- [ ] 完成AST与执行代码关于SELECT的结合
+- [x] 完成AST与执行代码关于SELECT的结合
 
-- [ ] 完成AST与执行代码关于DELETE的结合
+- [x] 完成AST与执行代码关于DELETE的结合
 
-- [ ] 完成AST与执行代码关于UPDATE的结合
+- [x] 完成AST与执行代码关于UPDATE的结合
 
 ##### 星期五添加的
 
 - [ ] 一个小问题：所以什么时候在硬盘写入文件，读入文件？
 
-- [ ] 完成AST与执行代码关于SELECT的WILDCARD设置（也就是选中所有列，详见输入5，输出5）
+- [x] 完成AST与执行代码关于SELECT的WILDCARD设置（也就是选中所有列，详见输入5，输出5）
 
-- [ ] 完成AST与执行代码关于SET的右侧赋值式结合
+- [x] 完成AST与执行代码关于SET的右侧赋值式结合
 
-- [ ] 完成AST与执行代码关于CREATE的基础结合，限制每一列的类型
+- [x] 完成AST与执行代码关于CREATE的基础结合，限制每一列的类型
 
-- [ ] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
+- [x] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
 
-- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入（当然还没做INSERT）
+- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入
+
+
+
+- [ ] 完成AST与执行代码关于INSERT的基础结合
+
+- [ ] 完成AST与执行代码关于INSERT在表名未指定列时的正确处理（详见输入输出7）
 
 - [ ] 更多……
 
