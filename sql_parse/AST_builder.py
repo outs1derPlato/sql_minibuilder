@@ -77,9 +77,6 @@ class AST:
         while idx < total_idx:
             cls, value = stream[idx]
 
-            if value == "PRIMARY":
-                pass
-            
             # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
             if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
                 cur_node.deal(cls, value)
@@ -120,7 +117,7 @@ class AST:
                 val = value.upper()
                 if val == "TABLE": pass
                 if val == "PRIMARY":
-                    self.search_constraint(idx, val)
+                    cur_node.content[0]["PRIMARY"] = True
                 if val == "NOT NULL":
                     cur_node.content[0]["NOT NULL"] = True
             idx = idx + 1
@@ -164,10 +161,9 @@ class AST:
                     if cur_node.value == "INSERT" and value == "(":
                         # 遇到这里，说明读到了INSERT INTO 表名 ( 的情况，接下来该是第二个clause了
                         cur_node = columns_clause_node
-                        requireValue = "VALUES"
                         idx = idx + 1
                         continue
-                    if pair_level == 2 and value == "(":
+                    elif (cur_node.value == "COLUMNS" and pair_level == 1 and value == "(" and self.next_token_value(idx+1) != "(") or (pair_level == 2 and value == "("):
                         # 第三个必定会存在的clause：value="VALUES",content包含每一列的值
                         values_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
                         values_clause_node.value = "VALUES"
@@ -260,7 +256,19 @@ class AST:
                     raise Exception(f"Current node level is {cur_node.attribute}, but the word level is {cur_cls_level}")
             idx = idx + 1
         return cur_node, idx
-    
+
+    def next_token_value(self, start_idx):
+        stream = self.tokens
+        idx = start_idx
+        total_idx = len(stream)
+        while idx < total_idx:
+            cls, value = stream[idx]
+            if value == " ":
+                idx = idx+1
+                continue
+            return value
+        return None
+
     def pprint(self):
         """
         用还算好看的方式打印自己的content
@@ -325,11 +333,11 @@ if __name__ == "__main__":
     """
     # INSERT的特殊情况，不指定列名
     sql7 = """
-    INSERT INTO table1
+    INSERT INTO table1(id,name)
     VALUES(
-        (1, 'alex', 2.3),
-        (2, 'bob', 2.4),
-        (5, 'jjj', 2.5)
+        (1, 'alex'),
+        (2, 'bob'),
+        (5, 'jjj')
     );
     """
     a = AST(sql7)

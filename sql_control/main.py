@@ -15,9 +15,7 @@ class blabla:
         示例用
         """
         self.db = DB()
-
-        self.dict ={}
-
+        self.dict = self.db.database
         # 外部数据读取 test
         for file_name in file_names:
             if file_name.endswith('.csv'):
@@ -25,19 +23,6 @@ class blabla:
                 file_path = data_folder + '/' + file_name
                 data_table = pd.read_csv(file_path)
                 self.dict[var_name] = data_table
-
-        # 内置 test2
-        self.db.create("test2", ["id", "name", "this", "this2"], [int, str, float, float])
-        self.test2 = self.db.database['test2']['tabledata']
-        flag, self.test2 = self.db.insert(table=self.test2, attributes=["id"], values=[[1], [2], [3]])
-        flag, self.test2 = self.db.update(table=self.test2, update_rows=None, attributes=["name"], values=["张三", "李四", "王五"])
-        flag, self.test2 = self.db.update(table=self.test2, update_rows=None, attributes=["this"], values=[2.1, 3, 3.6])
-        flag, self.test2 = self.db.update(table=self.test2, update_rows=None, attributes=["this2"], values=[11, 12, 13])
-        self.dict['test2'] = self.test2
-
-        print('原表test：\n', self.dict['test'], '\n')
-        print('原表test2：\n', self.dict['test2'], '\n')
-
 
     def ast_clear(self):
         """
@@ -66,6 +51,7 @@ class blabla:
         self.ast_clear()
         # 获取当前语句的AST
         self.extract(text)
+
         function = self.funct()
 
         # 查询
@@ -95,7 +81,19 @@ class blabla:
 
         # 添加
         elif function == 'INSERT':
-            print('INSERT')
+            tables = self.get_tables(function)
+            for table in tables:
+                cols = self.clause["COLUMNS"].content
+                values_clauses = self.ast.content[2:]
+                cur_table = self.db.database[table]
+                values_for_insert = []
+                for values_clause_i in values_clauses:
+                    values = values_clause_i.content
+                    self.check_types(cur_table['datatypes'], cols, values)
+                    self.check_null(cur_table['not_null_flag'], cols, values)
+                    self.check_primary(cur_table['tabledata'],cur_table['primary_key'],cols,values)
+                    values_for_insert.append(values)
+                _, cur_table['tabledata'] = self.db.insert(cur_table['tabledata'], cols, values_for_insert)
 
         # 删除
         elif function == 'DELETE':
@@ -106,7 +104,7 @@ class blabla:
 
         # 创建新表
         elif function == 'CREATE':
-            print("CREATE")
+            self.excute_create_statement()
 
         # 删除表
         elif function == 'DROP':
@@ -114,6 +112,45 @@ class blabla:
 
         else:
             print("ERROR FUNCTION")
+
+        if function != "SELECT":
+            self.save_tables()
+    
+    def check_types(self, requires, cols, values):
+        for i in range(len(cols)):
+            if requires[cols[i]].upper() in ["VARCHAR", "CHAR"]:
+                if not isinstance(values[i], str):
+                    raise Exception(f"Type of {cols[i]} is {requires[cols[i]]}, but {type(values[i])} is given.")
+            if requires[cols[i]].upper() in ["INT"]:
+                if not isinstance(values[i], int):
+                    raise Exception(f"Type of {cols[i]} is {requires[cols[i]]}, but {type(values[i])} is given.")
+            if requires[cols[i]].upper() in ["FLOAT"]:
+                if not isinstance(values[i],float):
+                    pass
+                    raise Exception(f"Type of {cols[i]} is {requires[cols[i]]}, but {type(values[i])} is given.")
+
+    def check_null(self, requires, cols, values):
+        for k in requires:
+            v = requires[k]
+            if v is True:
+                if k not in cols:
+                    raise Exception(f"{k} is not null, but null is given.")
+                else:
+                    if values[cols.index(k)] is None:
+                        raise Exception(f"{k} is not null, but null is given.")
+    
+    def check_primary(self, table: pd.DataFrame, primary_keys, cols, values):
+        for k in primary_keys:
+            if k in cols:
+                if values[cols.index(k)] in table[k].values:
+                    raise Exception(f"{k} is primary key, but {values[cols.index(k)]} is already in table.")
+            else:
+                raise Exception(f"{k} is primary key, but not given in insertion values.")
+
+    
+    def save_tables(self):
+        # 待实现
+        pass
 
     # 判断功能
     def funct(self):
@@ -172,8 +209,9 @@ class blabla:
             table_names = self.clause["FROM"].content
         elif function == "UPDATE":
             table_names = self.clause["UPDATE"].content
-        # ret = []
-        # for table_name_i in table_names:
+        elif function == "INSERT":
+            table_names = self.clause["INSERT"].content
+        return table_names
     
     def excute_create_statement(self):
         table = self.clause["CREATE"].content[0]
@@ -183,18 +221,27 @@ class blabla:
         primary_key_ls = []
         char_attri_ls = []
         char_attri_len_ls = []
-        for i in range(len(self.clause["COLUMNS"].content)):
-            attribute_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
-            types_ls.append(self.clause["COLUMNS"].content[i].content[0]["type"])
-            if (self.clause["COLUMNS"].content[i].content[0]["type"]=="char") or (self.clause["COLUMNS"].content[i].content[0]["type"]=="varchar"):
-                 char_attri_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
-                 char_attri_len_ls.append(self.clause["COLUMNS"].content[i].content[0]["length"])
-            not_null_ls.append(self.clause["COLUMNS"].content[i].content[0]["PRIMARY"])
-            if self.clause["COLUMNS"].content[i].content[0]["PRIMARY"]:
-                primary_key_ls.append(self.clause["COLUMNS"].content[i].content[0]["name"])
-        if self.db.create(table=table, attributes=attribute_ls, types=types_ls, not_null=not_null_ls, primary_key=primary_key_ls,char_attri=char_attri_ls,char_attri_len=char_attri_len_ls):
+
+        for col_def in self.clause["COLUMNS"].content:
+            t = col_def.content[0]
+            attribute_ls.append(t["name"])
+            types_ls.append(t["type"])
+            if t["type"] in ["char","varchar"]:
+                char_attri_ls.append(t["name"])
+                char_attri_len_ls.append(t["length"])
+            # attention: if it is a primary key, then it should always be not null
+            not_null_ls.append(t["NOT NULL"] or t["PRIMARY"])
+            if t["PRIMARY"]:
+                primary_key_ls.append(t["name"])
+        if self.db.create(table=table, 
+                          attributes=attribute_ls, 
+                          types=types_ls, 
+                          not_null=not_null_ls, 
+                          primary_key=primary_key_ls,
+                          char_attri=char_attri_ls,
+                          char_attri_len=char_attri_len_ls):
             print("创建成功!")
-            print(self.db.database[table]["not_null_flag"])
+            # print(self.db.database[table])
         else:
             print("创建失败!")
 
@@ -202,46 +249,92 @@ class blabla:
 
 if __name__ == "__main__":
     a = blabla()
+
+    # 创建
     sql1 = """
-        SELECT id, name
-        FROM test2
-        WHERE id >= 2 AND this < 3.1 OR this2 = 13 AND id = 1;
-        """
+    CREATE TABLE Persons
+    (
+        PersonID PRIMARY int,
+        LastName varchar(255) NOT NULL,
+        FirstName char(255),
+        Address float,
+        City varchar(255)
+    );
+    """
     a.execute(sql1)
+    print(a.db.database["Persons"]['tabledata'])
+    print("="*20)
+    print("="*20)
 
+    # 插入
     sql2 = """
-        UPDATE test2
-        SET this2 = 100, name = 'Li Si', this = this * 1.1
-        WHERE id >= 2 AND this2 < 13;
-        """
+    INSERT INTO Persons (PersonID,LastName, Address, City)
+    VALUES (
+        (3,'my', 2.3, "this"),
+        (4,'she', 5.6, "7"),
+        (5,'thistsdas',1.1,"9")
+    );
+    """
     a.execute(sql2)
+    print(a.db.database["Persons"]['tabledata'])
+    print("="*20)
+    print("="*20)
 
+    # 更新
     sql3 = """
-        SELECT id, name, this, this2
-        FROM test2
-        """
+    UPDATE Persons
+    SET Address = Address * 1.1
+    WHERE PersonID >= 2
+    """
     a.execute(sql3)
+    print(a.db.database["Persons"]['tabledata'])
+    print("="*20)
+    print("="*20)
 
-    sql4 = """
-            DELETE FROM test2
-            WHERE id = 1
-            """
-    a.execute(sql4)
-    a.execute(sql3)
+    # print(a.db.database["Persons"]['datatypes'])
+    # print(a.db.database["Persons"]['not_null_flag'])
+    # print(a.db.database["Persons"]['primary_key'])
+    # a = blabla()
+    # sql1 = """
+    #     SELECT id, name
+    #     FROM test2
+    #     WHERE id >= 2 AND this < 3.1 OR this2 = 13 AND id = 1;
+    #     """
+    # a.execute(sql1)
 
-    sql5 = """
-            SELECT *
-            FROM test
-            WHERE gender = Female;
-            """
-    a.execute(sql5)
+    # sql2 = """
+    #     UPDATE test2
+    #     SET this2 = 100, name = 'Li Si', this = this * 1.1
+    #     WHERE id >= 2 AND this2 < 13;
+    #     """
+    # a.execute(sql2)
 
-    sql6 = """
-            UPDATE test
-            SET salary = salary * 1.2
-            WHERE id = 1 OR id = 2 OR id = 5;
-            """
-    a.execute(sql6)
+    # sql3 = """
+    #     SELECT id, name, this, this2
+    #     FROM test2
+    #     """
+    # a.execute(sql3)
 
-    sql7 = """SELECT * FROM test"""
-    a.execute(sql7)
+    # sql4 = """
+    #         DELETE FROM test2
+    #         WHERE id = 1
+    #         """
+    # a.execute(sql4)
+    # a.execute(sql3)
+
+    # sql5 = """
+    #         SELECT *
+    #         FROM test
+    #         WHERE gender = Female;
+    #         """
+    # a.execute(sql5)
+
+    # sql6 = """
+    #         UPDATE test
+    #         SET salary = salary * 1.2
+    #         WHERE id = 1 OR id = 2 OR id = 5;
+    #         """
+    # a.execute(sql6)
+
+    # sql7 = """SELECT * FROM test"""
+    # a.execute(sql7)

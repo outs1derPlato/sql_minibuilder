@@ -98,7 +98,7 @@ class _coldef:
             self.content[0]["type"] = value
             
         elif cls in tokens.Name:
-            self.content[0]["name"] = value.upper()
+            self.content[0]["name"] = value
         
         elif cls in tokens.Literal:
             self.content[0]["length"] = Numerize(cls,value)
