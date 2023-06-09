@@ -7,6 +7,7 @@ import pandas as pd
 data_folder = '../data'
 file_names = os.listdir(data_folder)
 
+
 class blabla:
     def __init__(self):
         """
