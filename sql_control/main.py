@@ -121,6 +121,9 @@ class blabla:
 
     
     def check_types(self, requires, cols, values):
+        """
+        检查表中的数据类型是否符合要求
+        """
         for i in range(len(cols)):
             if requires[cols[i]].upper() in ["VARCHAR", "CHAR"]:
                 if not isinstance(values[i], str):
@@ -134,6 +137,9 @@ class blabla:
                     raise Exception(f"Type of {cols[i]} is {requires[cols[i]]}, but {type(values[i])} is given.")
 
     def check_null(self, requires, cols, values):
+        """
+        检查表中的非空字段是否为空
+        """
         for k in requires:
             v = requires[k]
             if v is True:
@@ -144,6 +150,9 @@ class blabla:
                         raise Exception(f"{k} is not null, but null is given.")
     
     def check_primary(self, table: pd.DataFrame, primary_keys, cols, values):
+        """
+        检查主键的值是否被给出，或者是否重复
+        """
         for k in primary_keys:
             if k in cols:
                 if values[cols.index(k)] in table[k].values:
@@ -152,16 +161,25 @@ class blabla:
                 raise Exception(f"{k} is primary key, but not given in insertion values.")
     
     def check_nums(self, cols, values):
+        """
+        检查插入的列数是否与值的个数相同
+        """
         if len(cols) != len(values):
             raise Exception(f"Number of columns is {len(cols)}, but {len(values)} is given.")
 
     
     def save_tables(self):
+        """
+        简单计划：用pickle来存储表
+        """
         # 待实现
         pass
 
     # 判断功能
     def funct(self):
+        """
+        返回单个statement的功能，是UPDATE，SELECT，INSERT，DELETE，CREATE，DROP中的一种
+        """
         return self.ast.content[0].value
 
     # SELECT功能的筛选列

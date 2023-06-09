@@ -333,9 +333,9 @@ VALUES                                                       level:AST_KEYWORDS.
 
 
 
-- [ ] 完成AST与执行代码关于INSERT的基础结合
+- [x] 完成AST与执行代码关于INSERT的基础结合
 
-- [ ] 完成AST与执行代码关于INSERT在表名未指定列时的正确处理（详见输入输出7）
+- [x] 完成AST与执行代码关于INSERT在表名未指定列时的正确处理（详见输入输出7）
 
 - [ ] 更多……
 
