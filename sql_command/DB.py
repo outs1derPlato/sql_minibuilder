@@ -69,7 +69,7 @@ class DB:
         table.drop(del_rows, inplace=True)
         return True
 
-    def drop(self, 
+    def truncate(self, 
                 table: pd.DataFrame
                 ) -> bool:
         #判断需要删除的表是否存在
@@ -79,7 +79,6 @@ class DB:
             # del table
             # option 2：删除表中所有记录
             table.drop(table.index, inplace=True)
-            self.dropped_tables.add(table)
             return True
         #否则返回False，即操作失败
         return False

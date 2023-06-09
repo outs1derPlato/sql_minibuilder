@@ -116,7 +116,18 @@ class blabla:
 
         # 删除表
         elif function == 'DROP':
-            print("DROP")
+            tables = self.get_tables(function)
+            # 目前是这么设计的
+            assert len(tables) == 1
+            table = tables[0]
+            del self.db.database[table]
+        
+        elif function == 'TRUNCATE':
+            tables = self.get_tables(function)
+            # 目前是这么设计的
+            assert len(tables) == 1
+            table = tables[0]
+            self.db.truncate(self.db.database[table]['tabledata'])
 
         else:
             print("ERROR FUNCTION")
@@ -237,10 +248,8 @@ class blabla:
     def get_tables(self, function):
         if function == "SELECT" or function == "DELETE":
             table_names = self.clause["FROM"].content
-        elif function == "UPDATE":
-            table_names = self.clause["UPDATE"].content
-        elif function == "INSERT":
-            table_names = self.clause["INSERT"].content
+        else:
+            table_names = self.clause[function].content
         return table_names
     
     def excute_create_statement(self):
@@ -329,6 +338,12 @@ if __name__ == "__main__":
     a.execute(sql4)
     print("=" * 20)
     print("=" * 20)
+
+    sql5 = """
+        TRUNCATE TABLE Persons;
+    """
+    a.execute(sql5)
+    print(a.db.database["Persons"]['tabledata'])
 
     # print(a.db.database["Persons"]['datatypes'])
     # print(a.db.database["Persons"]['not_null_flag'])

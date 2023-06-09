@@ -65,13 +65,19 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对CREATE时非空`NOT NULL`的解析
 
-- [ ] 对CREATE各种约束的解析（摆，不想做，因为外键有点麻烦）
+- [ ] 【不写了】对CREATE各种约束的解析
 
 - [x] 对SET赋值式右边的Binary Expression的解析（抱歉的是SET时的expression结构也换了，换成assignment了，详见输出2）
 
 - [x] 对CREATE的解析
 
 - [x] 对INSERT INTO的解析
+
+- [x] 对INSERT INTO多个VALUES的解析
+
+- [x] 对DROP的解析
+
+- [x] 对TRUNCATE的解析
 
 
 **目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）、删除命令（DELETE）与基础创建命令（CREATE）（不包含NOT NULL）的地方**
@@ -291,6 +297,17 @@ VALUES                                                       level:AST_KEYWORDS.
 -- 2.5
 ```
 
+输入8:
+```
+TRUNCATE TABLE Shippers
+```
+
+**实际输出8**：
+```
+TRUNCATE                                                     level:AST_KEYWORDS.CLAUSE
+-- Shippers
+```
+
 
 **用语解释**：
 
@@ -329,13 +346,17 @@ VALUES                                                       level:AST_KEYWORDS.
 
 - [x] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
 
-- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入
+- [ ] 【不写了】完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入
 
 
 
 - [x] 完成AST与执行代码关于INSERT的基础结合
 
 - [x] 完成AST与执行代码关于INSERT在表名未指定列时的正确处理（详见输入输出7）
+
+- [x] 完成AST与执行代码关于DROP的结合
+
+- [x] 完成AST与执行代码关于TRUNCATE的结合
 
 - [ ] 更多……
 
@@ -346,9 +367,9 @@ VALUES                                                       level:AST_KEYWORDS.
 
 #### 交给XJW
 
-- [x] delete方法（不完善，删去的对象没有保存于本地）
+- [x] delete方法
 
-- [x] drop方法（有待争议，是丢掉整个对象，还是丢掉表中的所有行，但保留列属性？）
+- [x] truncate方法（只是丢掉表中的所有行，但保留列属性）
 
 #### 交给CXL
 
@@ -382,12 +403,10 @@ def delete(
 ```
 
 
-**drop**
-
-是drop整张表，删除其对象，还是
+**truncate**
 
 ```python
-def drop(
+def truncate(
     self,
     table: pd.DataFrame,
 ) -> bool:

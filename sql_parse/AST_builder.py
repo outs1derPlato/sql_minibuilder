@@ -96,9 +96,9 @@ class AST:
                 if value.upper() == "INSERT":
                     node_insert, _ = self.build_AST_INSERT(idx, cur_node)
                     return node_insert, None
-                # DROP就更是了
-                if value.upper() == "DROP":
-                    node_drop, _ = self.build_AST_DROP(idx, cur_node)
+                # DROP和TRUNCATE就更是了
+                if value.upper() in ["DROP","TRUNCATE"]:
+                    node_drop, _ = self.build_AST_DROP(idx, cur_node, value.upper())
                     return node_drop, None
 
                 # 判断当前token的层级
@@ -267,7 +267,7 @@ class AST:
             idx = idx + 1
         return statement_node, idx
 
-    def build_AST_DROP(self, start_idx = 0, statement_node = None):
+    def build_AST_DROP(self, start_idx = 0, statement_node = None, specialKeyword = None):
         """
         由于INSERT语法差距与其他差距巨大，且语法结构并不灵活，很固定，所以单独处理
         """
@@ -275,8 +275,9 @@ class AST:
         total_idx = len(stream)
 
         # 唯一存在的clause: value="DROP",content包含table的名称
+        # 或者也可以是TRUNCATE，差别不大
         drop_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
-        drop_clause_node.value = "DROP"
+        drop_clause_node.value = specialKeyword
         statement_node.content.append(drop_clause_node)
 
         cur_node = drop_clause_node
@@ -292,7 +293,7 @@ class AST:
             # 如果当前token特殊，为关键字
             else:
                 val = value.upper()
-                if val == "DROP": pass
+                if val == specialKeyword: pass
                 # 读到这里，说明columns的名字已经读完了，在读VALUES了，进入下一个clause
                 if val == "TABLE": pass
             idx = idx + 1
@@ -387,7 +388,7 @@ if __name__ == "__main__":
     """
     # DROP
     sql8 = """
-    DROP TABLE Shippers
+    TRUNCATE TABLE Shippers
     """
     a = AST(sql8)
     a.pprint()
