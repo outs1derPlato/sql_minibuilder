@@ -65,13 +65,13 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对CREATE时非空`NOT NULL`的解析
 
-- [ ] 对CREATE各种约束的解析
+- [ ] 对CREATE各种约束的解析（摆，不想做，因为外键有点麻烦）
 
 - [x] 对SET赋值式右边的Binary Expression的解析（抱歉的是SET时的expression结构也换了，换成assignment了，详见输出2）
 
 - [x] 对CREATE的解析
 
-- [ ] 对INSERT INTO的解析
+- [x] 对INSERT INTO的解析
 
 
 **目前已部分完成，只到能够解析查询命令（SELECT）、更新命令（UPDATE）、删除命令（DELETE）与基础创建命令（CREATE）（不包含NOT NULL）的地方**
@@ -242,6 +242,43 @@ WHERE                                                        level:AST_KEYWORDS.
 ---- {'left': 'this', 'op': '<', 'right': 2.3}
 ```
 
+输入6：
+```
+INSERT INTO table1 (id, name, this)
+VALUES (1, 'alex', 2.3);
+```
+
+**实际输出6**：
+```
+INSERT                                                       level:AST_KEYWORDS.CLAUSE
+-- table1
+COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
+-- id
+-- name
+-- this
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 1
+-- alex
+-- 2.3
+```
+
+输入7：（与输入6的区别在于，INSERT INTO未指定表名）
+```
+INSERT INTO table1
+VALUES (1, 'alex', 2.3);
+```
+
+**实际输出7**
+```
+INSERT                                                       level:AST_KEYWORDS.CLAUSE
+-- table1
+COLUMNS                                                      level:AST_KEYWORDS.CLAUSE
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 1
+-- alex
+-- 2.3
+```
+
 
 **用语解释**：
 
@@ -280,7 +317,13 @@ WHERE                                                        level:AST_KEYWORDS.
 
 - [ ] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
 
-- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入（当然还没做INSERT）
+- [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入
+
+
+
+- [ ] 完成AST与执行代码关于INSERT的基础结合
+
+- [ ] 完成AST与执行代码关于INSERT在表名未指定列时的正确处理（详见输入输出7）
 
 - [ ] 更多……
 

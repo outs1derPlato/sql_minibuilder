@@ -6,7 +6,6 @@ class AST_KEYWORDS(enum.IntEnum):
     CLAUSE = 1
     EXPRESSION = 2
     COLUMN_DEFINITION = 10
-    CONSTRAINT = 11
 
 class _statement:
     def __init__(self):
@@ -29,17 +28,19 @@ class _clause:
         对于一个非关键词的token，根据自己的类型，将其加入到自己的内容中
         """
         # 当前columns的类型决定其会记录columns
-        if self.value in ["SELECT", "CREATE"]: 
+        if self.value in ["SELECT", "CREATE", "COLUMNS"]: 
             if cls in tokens.Name:
                 self.content.append(value)
             elif cls in tokens.Wildcard:
                 self.content.append(tokens.Wildcard)
         # 当前clause的类型决定其会记录tables
-        if self.value in ["FROM", "UPDATE"]: 
+        if self.value in ["FROM", "UPDATE", "INSERT"]: 
             if cls in tokens.Name:
                 self.content.append(value)
-        # 当前clause的类型决定其会记录一个表达式
-        # TODO: 完成一些例如CREATE，PRIMARY之类的处理
+        # 当前clause的类型决定其会记录values，但并不是表达式
+        if self.value in ["VALUES"]:
+            if cls in tokens.Name or cls in tokens.Literal:
+                self.content.append(Numerize(cls,value))
 
         # WHERE很特殊，之后WHERE会被重复利用一次，以完成多个表达式的连接
         # 因此理论上WHERE clause不可能接受到非关键词token(忽略)，WHERE　expression才会接受到
@@ -102,24 +103,6 @@ class _coldef:
         elif cls in tokens.Literal:
             self.content[0]["length"] = Numerize(cls,value)
 
-class _constraint:
-    def __init__(self):
-        self.attribute = AST_KEYWORDS.CONSTRAINT
-        self.content = []
-
-    def deal(self, cls, value):
-        """
-        对于一个非关键词的token，根据自己的类型，将其加入到自己的内容中
-        """
-        # 说明这是一个column的类型提示
-        if cls in tokens.Name.Builtin:
-            self.content[0]["type"] = value
-            
-        elif cls in tokens.Name:
-            self.content[0]["name"] = value.upper()
-        
-        elif cls in tokens.Literal:
-            self.content[0]["length"] = Numerize(cls,value)
 
 def Numerize(cls, text: str):
     """
