@@ -77,6 +77,9 @@ class AST:
 
         while idx < total_idx:
             cls, value = stream[idx]
+
+            if value == "PRIMARY":
+                pass
             
             # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
             if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
@@ -119,7 +122,7 @@ class AST:
                 val = value.upper()
                 if val == "TABLE": pass
                 if val == "PRIMARY":
-                    cur_node.content[0]["PRIMARY"] = True
+                    self.search_constraint(idx, val)
                 if val == "NOT NULL":
                     cur_node.content[0]["NOT NULL"] = True
             idx = idx + 1
@@ -234,13 +237,13 @@ if __name__ == "__main__":
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
     sql4 = """
-    CREATE TABLE Persons
-    (
-        PersonID SERIAL int,
-        LastName PRIMARY varchar(255),
+    CREATE TABLE Persons (
+        PersonID int,
+        LastName varchar(255),
         FirstName char(255) NOT NULL,
         Address float,
-        City varchar(255)
+        City varchar(255),
+        PRIMARY KEY (PersonID)
     );
     """
     sql5 = """
@@ -248,7 +251,7 @@ if __name__ == "__main__":
     FROM table1, table2
     WHERE id = 1 AND "this" < 2.3;
     """
-    a = AST(sql5)
+    a = AST(sql4)
     # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
     # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
     # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行

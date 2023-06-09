@@ -6,6 +6,7 @@ class AST_KEYWORDS(enum.IntEnum):
     CLAUSE = 1
     EXPRESSION = 2
     COLUMN_DEFINITION = 10
+    CONSTRAINT = 11
 
 class _statement:
     def __init__(self):
@@ -21,6 +22,7 @@ class _clause:
     def __init__(self):
         self.attribute = AST_KEYWORDS.CLAUSE
         self.content = []
+        self.value = None
 
     def deal(self, cls, value):
         """
@@ -49,6 +51,7 @@ class _expression:
     def __init__(self):
         self.attribute = AST_KEYWORDS.EXPRESSION
         self.content = []
+        self.value = None
 
     def deal(self, cls, value):
         """
@@ -84,6 +87,25 @@ class _coldef:
     def __init__(self):
         self.attribute = AST_KEYWORDS.COLUMN_DEFINITION
         self.content = [{"PRIMARY":False,"NOT NULL":False}]
+
+    def deal(self, cls, value):
+        """
+        对于一个非关键词的token，根据自己的类型，将其加入到自己的内容中
+        """
+        # 说明这是一个column的类型提示
+        if cls in tokens.Name.Builtin:
+            self.content[0]["type"] = value
+            
+        elif cls in tokens.Name:
+            self.content[0]["name"] = value.upper()
+        
+        elif cls in tokens.Literal:
+            self.content[0]["length"] = Numerize(cls,value)
+
+class _constraint:
+    def __init__(self):
+        self.attribute = AST_KEYWORDS.CONSTRAINT
+        self.content = []
 
     def deal(self, cls, value):
         """
