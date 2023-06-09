@@ -140,17 +140,13 @@ class AST:
         columns_clause_node.value = "COLUMNS"
         statement_node.content.append(columns_clause_node)
 
-        # 第三个必定会存在的clause：value="VALUES",content包含每一列的值
-        values_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
-        values_clause_node.value = "VALUES"
-        statement_node.content.append(values_clause_node)
 
         # 在找到INSERT关键词后，我们希望找的是：INSERT INTO 表名
         requireValue = "INTO"
         cur_node = insert_clause_node
         idx = start_idx + 1
 
-        pair_entry_count = 0
+        pair_level = 0
 
         while idx < total_idx:
             cls, value = stream[idx]
@@ -162,6 +158,8 @@ class AST:
             # 如果当前token为标点
             elif cls in tokens.Punctuation:
                 # ()的处理
+                if value == "(":
+                    pair_level = pair_level + 1
                 if value in ["(", ")"]:
                     if cur_node.value == "INSERT" and value == "(":
                         # 遇到这里，说明读到了INSERT INTO 表名 ( 的情况，接下来该是第二个clause了
@@ -169,6 +167,14 @@ class AST:
                         requireValue = "VALUES"
                         idx = idx + 1
                         continue
+                    if pair_level == 2 and value == "(":
+                        # 第三个必定会存在的clause：value="VALUES",content包含每一列的值
+                        values_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+                        values_clause_node.value = "VALUES"
+                        statement_node.content.append(values_clause_node)
+                        cur_node = values_clause_node
+                if value == ")":
+                    pair_level = pair_level - 1
 
             # 如果当前token特殊，为关键字
             else:
@@ -176,7 +182,7 @@ class AST:
                 if val == "INTO": pass
                 # 读到这里，说明columns的名字已经读完了，在读VALUES了，进入下一个clause
                 if val == "VALUES":
-                    cur_node = values_clause_node
+                    pass
             idx = idx + 1
         return statement_node, idx
 
@@ -298,7 +304,7 @@ if __name__ == "__main__":
     # 基础CREATE
     sql4 = """
     CREATE TABLE Persons (
-        PersonID PRIMARY int,
+        PersonID SERIAL int,
         LastName varchar(255),
         FirstName char(255) NOT NULL,
         Address float,
@@ -319,7 +325,11 @@ if __name__ == "__main__":
     # INSERT的特殊情况，不指定列名
     sql7 = """
     INSERT INTO table1
-    VALUES (1, 'alex', 2.3);
+    VALUES(
+        (1, 'alex', 2.3),
+        (2, 'bob', 2.4),
+        (5, 'jjj', 2.5)
+    );
     """
     a = AST(sql7)
     a.pprint()
