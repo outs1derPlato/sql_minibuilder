@@ -262,10 +262,14 @@ VALUES                                                       level:AST_KEYWORDS.
 -- 2.3
 ```
 
-输入7：（与输入6的区别在于，INSERT INTO未指定表名）
+输入7：（与输入6的区别在于，INSERT INTO未指定表名，同时是多列）
 ```
 INSERT INTO table1
-VALUES (1, 'alex', 2.3);
+VALUES(
+    (1, 'alex', 2.3),
+    (2, 'bob', 2.4),
+    (5, 'jjj', 2.5)
+);
 ```
 
 **实际输出7**
@@ -277,6 +281,14 @@ VALUES                                                       level:AST_KEYWORDS.
 -- 1
 -- alex
 -- 2.3
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 2
+-- bob
+-- 2.4
+VALUES                                                       level:AST_KEYWORDS.CLAUSE
+-- 5
+-- jjj
+-- 2.5
 ```
 
 
