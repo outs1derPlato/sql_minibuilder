@@ -49,7 +49,7 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对WHERE的基础解析
 
-- [ ] 对WHERE中AND、OR的正确顺序判断
+- [x] 对WHERE中AND、OR的正确顺序判断
 
 - [x] 对SET的解析
 
@@ -297,25 +297,25 @@ VALUES                                                       level:AST_KEYWORDS.
 
 - [x] 完成示例文件，演示如何结合AST与实现的`sql_command`，通过FROM语句获得databse中的表
 
-- [ ] 完成AST与执行代码关于WHERE的结合
+- [x] 完成AST与执行代码关于WHERE的结合
 
-- [ ] 完成AST与执行代码关于SELECT的结合
+- [x] 完成AST与执行代码关于SELECT的结合
 
-- [ ] 完成AST与执行代码关于DELETE的结合
+- [x] 完成AST与执行代码关于DELETE的结合
 
-- [ ] 完成AST与执行代码关于UPDATE的结合
+- [x] 完成AST与执行代码关于UPDATE的结合
 
 ##### 星期五添加的
 
 - [ ] 一个小问题：所以什么时候在硬盘写入文件，读入文件？
 
-- [ ] 完成AST与执行代码关于SELECT的WILDCARD设置（也就是选中所有列，详见输入5，输出5）
+- [x] 完成AST与执行代码关于SELECT的WILDCARD设置（也就是选中所有列，详见输入5，输出5）
 
-- [ ] 完成AST与执行代码关于SET的右侧赋值式结合
+- [x] 完成AST与执行代码关于SET的右侧赋值式结合
 
-- [ ] 完成AST与执行代码关于CREATE的基础结合，限制每一列的类型
+- [x] 完成AST与执行代码关于CREATE的基础结合，限制每一列的类型
 
-- [ ] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
+- [x] 完成AST与执行代码关于CREATE的主键设置,NOT NULL设置
 
 - [ ] 完成AST与执行代码关于CREATE中类型有SERIAL时，在INSERT时主键的自动更新并插入
 
