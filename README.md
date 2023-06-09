@@ -65,6 +65,8 @@ WHERE id = 1 AND this < 2.3;
 
 - [x] 对CREATE时非空`NOT NULL`的解析
 
+- [ ] 对CREATE各种约束的解析
+
 - [x] 对SET赋值式右边的Binary Expression的解析（抱歉的是SET时的expression结构也换了，换成assignment了，详见输出2）
 
 - [x] 对CREATE的解析
