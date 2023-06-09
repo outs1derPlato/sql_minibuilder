@@ -712,3 +712,5 @@ KEYWORDS_COMMON = {
     'MAX': tokens.Keyword,
     'DISTINCT': tokens.Keyword,
 }
+
+

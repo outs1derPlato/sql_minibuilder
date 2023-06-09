@@ -26,6 +26,13 @@ class tokenizer:
         self._keywords.append(keywords.KEYWORDS_COMMON)
         self._keywords.append(keywords.KEYWORDS)
 
+        # reverse to find the built-in keywords
+        self.KEYWORDS_BUILTIN_LIST = []
+        for k, v in keywords.KEYWORDS.items():
+            if v != tokens.Name.Builtin:
+                continue
+            self.KEYWORDS_BUILTIN_LIST.append(k)
+
     def is_keyword(self, value):
         """
         判断当前的内容是一个NAME还是关键字
@@ -39,6 +46,20 @@ class tokenizer:
                 return kwdict[val], value
         else:
             return tokens.Name, value
+    
+    def builtin_check(self, action, value):
+        """
+        一个特殊的check，保证当前的token是一个内置的类型，而非一个自定义的类型
+        这里多余的处理是因为最开始的正则不太对
+        """
+        if action != tokens.Token.Name:
+            return action, value
+        val = value.upper()
+        if val in self.KEYWORDS_BUILTIN_LIST:
+            return tokens.Token.Name.Builtin, value
+        else:
+            return action, value
+        
     
     def consume(self,iterator, n):
         """
@@ -64,7 +85,7 @@ class tokenizer:
                 if not m:       # 从这个字符往后看，并不能匹配出任何的关键字或者token
                     continue
                 elif isinstance(action, tokens._TokenType): # 如果这是一个普通Token
-                    yield action, m.group()
+                    yield self.builtin_check(action,m.group())
                 elif action is keywords.PROCESS_AS_KEYWORD: # 如果这是一个关键字
                     yield self.is_keyword(m.group())
 

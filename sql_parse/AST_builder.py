@@ -1,12 +1,12 @@
 from sql_parse.tokenizer import tokenizer  
 from sql_parse import tokens
 from sql_parse.ast_def import AST_KEYWORDS
-from sql_parse.ast_def import _statement,_clause,_expression
+from sql_parse.ast_def import _statement,_clause,_expression,_coldef
 
 
 class AST:
     def __init__(self, text = None):
-        self.get_tokens(text)
+        self.get_tokens(text=text)
         new_statement = _statement()
         new_statement.attribute = AST_KEYWORDS.STATEMENT
         self.content , _ = self.build_AST(start_idx=0, cur_node=new_statement)
@@ -51,7 +51,138 @@ class AST:
             return _clause()
         if(level == AST_KEYWORDS.EXPRESSION):
             return _expression()
+        if(level == AST_KEYWORDS.COLUMN_DEFINITION):
+            return _coldef()
     
+    def build_AST_CREATE(self, start_idx = 0, statement_node = None):
+        stream = self.tokens
+        total_idx = len(stream)
+
+        # 第一个必定会存在的clause: value="CREATE",content包含table的名称
+        create_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        create_clause_node.value = "CREATE"
+        statement_node.content.append(create_clause_node)
+
+        # 第二个必定会存在的clause：value="COLUMNS",content包含每一列的定义
+        columns_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        columns_clause_node.value = "COLUMNS"
+        statement_node.content.append(columns_clause_node)
+
+        # 在找到CREATE关键词后，我们希望找的是：CREATE TABLE 表名
+        cur_node = create_clause_node
+        idx = start_idx + 1
+
+        pair_level = 0
+
+        while idx < total_idx:
+            cls, value = stream[idx]
+
+            # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
+            if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
+                cur_node.deal(cls, value)
+
+            # 如果当前token为标点
+            elif cls in tokens.Punctuation:
+                # ()的处理
+                if value in ["(", ")"]:
+                    if value == "(":
+                        pair_level = pair_level + 1
+                    if pair_level == 1 and value == "(":
+                        # 遇到这里，说明读到了CREATE TABLE 表名 ( 的情况，接下来该是新的clause了
+                        if cur_node.value == "CREATE":
+                            cur_coldef_node = self.create_node(AST_KEYWORDS.COLUMN_DEFINITION)
+                            cur_coldef_node.value = "COLUMN_DEFINITION"
+                            columns_clause_node.content.append(cur_coldef_node)
+                            cur_node = cur_coldef_node
+                            idx = idx + 1
+                            continue
+                    if pair_level == 1 and value == ")":
+                        # 遇到这里，说明是在希望读取下一个列的时候，发现已经没有更多列了
+                        # 那可真是个天大的喜事，说明读取完成了
+                        return statement_node, idx
+                    if value == ")":
+                        pair_level = pair_level - 1
+                # 逗号的处理
+                if value in [","]:
+                    # 一个列的结束，另一个列的开始
+                    cur_coldef_node = self.create_node(AST_KEYWORDS.COLUMN_DEFINITION)
+                    cur_coldef_node.value = "COLUMN_DEFINITION"
+                    columns_clause_node.content.append(cur_coldef_node)
+                    cur_node = cur_coldef_node
+                    idx = idx + 1
+                    continue
+
+            # 如果当前token特殊，为关键字……（但其实唯一要看的关键字就是TABLE和PRIMARY（目前的话））
+            else:
+                val = value.upper()
+                if val == "TABLE": pass
+                if val == "PRIMARY":
+                    cur_node.content[0]["PRIMARY"] = True
+                if val == "NOT NULL":
+                    cur_node.content[0]["NOT NULL"] = True
+            idx = idx + 1
+        return statement_node, idx
+    
+    def build_AST_INSERT(self, start_idx = 0, statement_node = None):
+        stream = self.tokens
+        total_idx = len(stream)
+
+        # 第一个必定会存在的clause: value="INSERT",content包含table的名称
+        insert_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        insert_clause_node.value = "INSERT"
+        statement_node.content.append(insert_clause_node)
+
+        # 第二个必定会存在的clause：value="COLUMNS",content包含每一列的名称
+        columns_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+        columns_clause_node.value = "COLUMNS"
+        statement_node.content.append(columns_clause_node)
+
+
+        # 在找到INSERT关键词后，我们希望找的是：INSERT INTO 表名
+        requireValue = "INTO"
+        cur_node = insert_clause_node
+        idx = start_idx + 1
+
+        pair_level = 0
+
+        while idx < total_idx:
+            cls, value = stream[idx]
+            
+            # 如果当前token并不特殊，非关键字，那么就是当前node需要接受的内容
+            if (cls not in tokens.Keyword) and (cls not in tokens.Punctuation):
+                cur_node.deal(cls, value)
+
+            # 如果当前token为标点
+            elif cls in tokens.Punctuation:
+                # ()的处理
+                if value == "(":
+                    pair_level = pair_level + 1
+                if value in ["(", ")"]:
+                    if cur_node.value == "INSERT" and value == "(":
+                        # 遇到这里，说明读到了INSERT INTO 表名 ( 的情况，接下来该是第二个clause了
+                        cur_node = columns_clause_node
+                        idx = idx + 1
+                        continue
+                    elif (cur_node.value == "COLUMNS" and pair_level == 1 and value == "(" and self.next_token_value(idx+1) != "(") or (pair_level == 2 and value == "("):
+                        # 第三个必定会存在的clause：value="VALUES",content包含每一列的值
+                        values_clause_node = self.create_node(AST_KEYWORDS.CLAUSE)
+                        values_clause_node.value = "VALUES"
+                        statement_node.content.append(values_clause_node)
+                        cur_node = values_clause_node
+                if value == ")":
+                    pair_level = pair_level - 1
+
+            # 如果当前token特殊，为关键字
+            else:
+                val = value.upper()
+                if val == "INTO": pass
+                # 读到这里，说明columns的名字已经读完了，在读VALUES了，进入下一个clause
+                if val == "VALUES":
+                    pass
+            idx = idx + 1
+        return statement_node, idx
+
+
     def build_AST(self, start_idx = 0, cur_node = None):
         stream = self.tokens
         idx = start_idx
@@ -85,6 +216,16 @@ class AST:
 
             # 如果当前token特殊，为关键字
             else:
+                # 特殊语法检查
+                # CREATE的语法区别和其他的差别太大了，放弃兼容性，直接单独处理
+                if value.upper() == "CREATE":
+                    node_create, _ = self.build_AST_CREATE(idx, cur_node)
+                    return  node_create, None
+                # INSERT同理
+                if value.upper() == "INSERT":
+                    node_insert, _ = self.build_AST_INSERT(idx, cur_node)
+                    return node_insert, None
+
                 # 判断当前token的层级
                 par_cls_level = cur_node.attribute
                 cur_cls_level = self.get_level(value=value.upper(),par_value=cur_node.value)
@@ -115,7 +256,19 @@ class AST:
                     raise Exception(f"Current node level is {cur_node.attribute}, but the word level is {cur_cls_level}")
             idx = idx + 1
         return cur_node, idx
-    
+
+    def next_token_value(self, start_idx):
+        stream = self.tokens
+        idx = start_idx
+        total_idx = len(stream)
+        while idx < total_idx:
+            cls, value = stream[idx]
+            if value == " ":
+                idx = idx+1
+                continue
+            return value
+        return None
+
     def pprint(self):
         """
         用还算好看的方式打印自己的content
@@ -127,7 +280,7 @@ class AST:
         pprint的单层实现
         """
         for idx, cur_list_i in enumerate(cur_list):
-            if isinstance(cur_list_i, _clause) or isinstance(cur_list_i, _expression):
+            if isinstance(cur_list_i, _clause) or isinstance(cur_list_i, _expression) or isinstance(cur_list_i,_coldef):
                 level = "level:" + str(cur_list_i.attribute)
                 item = _pre + str(cur_list_i.value)
                 print(f"{item:<60} {level:<50}")
@@ -139,29 +292,55 @@ class AST:
             
 
 if __name__ == "__main__":
+    # 基础SELECT
     sql1 = """
     SELECT id, name, this
     FROM table1, table2
     WHERE id = 1 AND "this" < 2.3;
     """
+    # 基础UPDATE
     sql2 = """
     UPDATE table1
-    SET alexa = 50000, country='USA', salary = 14.5
+    SET alexa = 50000, country='USA', salary = salary * 14.5
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
+    # 基础DELETE
     sql3 = """
     DELETE table1
     WHERE id = 1 AND this < 2.3 OR name>1;
     """
+    # 基础CREATE
+    sql4 = """
+    CREATE TABLE Persons (
+        PersonID SERIAL int,
+        LastName varchar(255),
+        FirstName char(255) NOT NULL,
+        Address float,
+        City varchar(255),
+    );
+    """
+    # SELECT的特殊情况：Wildcard
+    sql5 = """
+    SELECT *
+    FROM table1, table2
+    WHERE id = 1 AND "this" < 2.3;
+    """
 
-    a = AST(sql3)
-    # TODO: 由于自己的实现是从左往右读TOKEN，而没有提前读等操作，因而不可能先读
-    # AND再读WHERE。自己的一个暂时的解决方法是将AND和WHERE一样看作一个
-    # expression，这样能保证一个CLAUSE中只有一个表达式（例如a=3），读到AND时执行
-    # WHERE查询，再将AND查询的结果，与WHERE查询的结果取交集。如果后面还有AND，就
-    # 再与左边的取交集……这样对于多个AND没有问题，但是如果有OR，那么优先级就被打
-    # 乱了，必须要先完成OR两边的再对两边的结果取并集
-    # 现在来看这部分有点困难，先不要动为好
+    # 基础INSERT
+    sql6 = """
+    INSERT INTO table1 (id, name, this)
+    VALUES (1, 'alex', 2.3);
+    """
+    # INSERT的特殊情况，不指定列名
+    sql7 = """
+    INSERT INTO table1(id,name)
+    VALUES(
+        (1, 'alex'),
+        (2, 'bob'),
+        (5, 'jjj')
+    );
+    """
+    a = AST(sql7)
     a.pprint()
     show = a.content
     print("\n\n",show)

@@ -2,16 +2,23 @@ import pandas as pd
 
 class DB:
     def __init__(self):
-        self.dbtypes=dict[dict['tablename':str,'tabledata':pd.DataFrame,'datatypes':dict]]
+        self.dbtypes=dict[dict['tablename':str,'tabledata':pd.DataFrame,'datatypes':dict,'not_null_flag':dict,'primary_key':str,'attri_len':dict]]
         self.database = {}
         #访问某个表用 database['表名']
         #访问某个表中的数据用 database['表名']['tabledata'] 这是一个pd.DataFrame型的数据
         #访问某个表中某个属性的数据类型用 database['表名']['datatypes']['属性名']
+        #查询某个表中某个属性是否是not null ：database['表名']['not_null_flag']['属性名']
+        #访问某个表中某个(这里仅考虑char varchar类型)属性设定的长度 ：database['表名']['attri_len']['属性名']
+        #primary: database['表名']['primary_key']['属性名']
 
     def create(self,
                 table: str,
                 attributes: list[str],
-                types: list[str]) -> bool:
+                types: list[str],
+                not_null: list[bool],
+                primary_key: list[str],
+                char_attri: list[str],
+                char_attri_len: list[int]) -> bool:
         #检查表是否已经存在
         if table in self.database:
             print(f"Table '{table}' already exists.")
@@ -21,7 +28,10 @@ class DB:
         newtable = {
             'tablename': table,
             'tabledata': pd.DataFrame(columns=attributes),
-            'datatypes': {attr: data_type for attr, data_type in zip(attributes, types)}
+            'datatypes': {attr: data_type for attr, data_type in zip(attributes, types)},
+            'not_null_flag': {attr: not_null for attr, not_null in zip(attributes, not_null)},
+            'primary_key': primary_key,
+            'attri_len': {ch: chlen for ch, chlen in zip(char_attri,char_attri_len)}
         }
         #数据库添加新表
         self.database[table] = newtable
