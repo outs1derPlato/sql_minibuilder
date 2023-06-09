@@ -2,6 +2,7 @@ from sql_parse.AST_builder import AST
 from sql_command.DB import DB
 import os
 import pandas as pd
+import pickle
 
 from sql_parse.tokens import Token
 
@@ -86,9 +87,14 @@ class blabla:
                 cols = self.clause["COLUMNS"].content
                 values_clauses = self.ast.content[2:]
                 cur_table = self.db.database[table]
+
                 values_for_insert = []
+                if cols == []:
+                    cols = list(cur_table['datatypes'].keys())
+
                 for values_clause_i in values_clauses:
                     values = values_clause_i.content
+                    self.check_nums(cols, values)
                     self.check_types(cur_table['datatypes'], cols, values)
                     self.check_null(cur_table['not_null_flag'], cols, values)
                     self.check_primary(cur_table['tabledata'],cur_table['primary_key'],cols,values)
@@ -113,10 +119,11 @@ class blabla:
         else:
             print("ERROR FUNCTION")
 
-        if function != "SELECT":
-            self.save_tables()
     
     def check_types(self, requires, cols, values):
+        """
+        检查表中的数据类型是否符合要求
+        """
         for i in range(len(cols)):
             if requires[cols[i]].upper() in ["VARCHAR", "CHAR"]:
                 if not isinstance(values[i], str):
@@ -130,6 +137,9 @@ class blabla:
                     raise Exception(f"Type of {cols[i]} is {requires[cols[i]]}, but {type(values[i])} is given.")
 
     def check_null(self, requires, cols, values):
+        """
+        检查表中的非空字段是否为空
+        """
         for k in requires:
             v = requires[k]
             if v is True:
@@ -140,20 +150,36 @@ class blabla:
                         raise Exception(f"{k} is not null, but null is given.")
     
     def check_primary(self, table: pd.DataFrame, primary_keys, cols, values):
+        """
+        检查主键的值是否被给出，或者是否重复
+        """
         for k in primary_keys:
             if k in cols:
                 if values[cols.index(k)] in table[k].values:
                     raise Exception(f"{k} is primary key, but {values[cols.index(k)]} is already in table.")
             else:
                 raise Exception(f"{k} is primary key, but not given in insertion values.")
+    
+    def check_nums(self, cols, values):
+        """
+        检查插入的列数是否与值的个数相同
+        """
+        if len(cols) != len(values):
+            raise Exception(f"Number of columns is {len(cols)}, but {len(values)} is given.")
 
     
     def save_tables(self):
+        """
+        简单计划：用pickle来存储表
+        """
         # 待实现
         pass
 
     # 判断功能
     def funct(self):
+        """
+        返回单个statement的功能，是UPDATE，SELECT，INSERT，DELETE，CREATE，DROP中的一种
+        """
         return self.ast.content[0].value
 
     # SELECT功能的筛选列
