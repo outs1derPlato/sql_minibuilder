@@ -2,6 +2,7 @@ from sql_parse.AST_builder import AST
 from sql_command.DB import DB
 import os
 import pandas as pd
+import pickle
 
 from sql_parse.tokens import Token
 
@@ -86,9 +87,14 @@ class blabla:
                 cols = self.clause["COLUMNS"].content
                 values_clauses = self.ast.content[2:]
                 cur_table = self.db.database[table]
+
                 values_for_insert = []
+                if cols == []:
+                    cols = list(cur_table['datatypes'].keys())
+
                 for values_clause_i in values_clauses:
                     values = values_clause_i.content
+                    self.check_nums(cols, values)
                     self.check_types(cur_table['datatypes'], cols, values)
                     self.check_null(cur_table['not_null_flag'], cols, values)
                     self.check_primary(cur_table['tabledata'],cur_table['primary_key'],cols,values)
@@ -113,8 +119,6 @@ class blabla:
         else:
             print("ERROR FUNCTION")
 
-        if function != "SELECT":
-            self.save_tables()
     
     def check_types(self, requires, cols, values):
         for i in range(len(cols)):
@@ -146,6 +150,10 @@ class blabla:
                     raise Exception(f"{k} is primary key, but {values[cols.index(k)]} is already in table.")
             else:
                 raise Exception(f"{k} is primary key, but not given in insertion values.")
+    
+    def check_nums(self, cols, values):
+        if len(cols) != len(values):
+            raise Exception(f"Number of columns is {len(cols)}, but {len(values)} is given.")
 
     
     def save_tables(self):
