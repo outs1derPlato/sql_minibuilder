@@ -317,6 +317,7 @@ if __name__ == "__main__":
     FROM table1, table2
     WHERE id = 1 AND "this" < 2.3;
     """
+
     # 基础INSERT
     sql6 = """
     INSERT INTO table1 (id, name, this)
