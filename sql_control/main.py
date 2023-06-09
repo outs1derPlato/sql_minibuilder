@@ -5,8 +5,8 @@ import pandas as pd
 
 from sql_parse.tokens import Token
 
-data_folder = '../data'
-file_names = os.listdir(data_folder)
+# data_folder = '../data'
+# file_names = os.listdir(data_folder)
 
 
 class blabla:
@@ -15,14 +15,13 @@ class blabla:
         示例用
         """
         self.db = DB()
-        self.dict = self.db.database
         # 外部数据读取 test
-        for file_name in file_names:
-            if file_name.endswith('.csv'):
-                var_name = os.path.splitext(file_name)[0]
-                file_path = data_folder + '/' + file_name
-                data_table = pd.read_csv(file_path)
-                self.dict[var_name] = data_table
+        # for file_name in file_names:
+        #     if file_name.endswith('.csv'):
+        #         var_name = os.path.splitext(file_name)[0]
+        #         file_path = data_folder + '/' + file_name
+        #         data_table = pd.read_csv(file_path)
+        #         self.dict[var_name] = data_table
 
     def ast_clear(self):
         """
@@ -59,14 +58,16 @@ class blabla:
             tables = self.get_tables(function)
             cols = self.get_col()
             for table in tables:
+                cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
-                result = self.db.select(self.dict[table], cols, rows) if Token.Wildcard not in cols else self.db.select(self.dict[table], self.dict[table].columns, rows)
+                result = self.db.select(cur_table['tabledata'], cols, rows) if Token.Wildcard not in cols else self.db.select(cur_table['tabledata'], cur_table['tabledata'].columns, rows)
                 print(result)
 
         # 更新
         elif function == 'UPDATE':
             tables = self.get_tables(function)
             for table in tables:
+                cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
                 for up in self.clause["SET"].content:
                     v = up.content[0]['expression']
@@ -74,10 +75,10 @@ class blabla:
                         if isinstance(v['left'], int) or isinstance(v['left'], float) or (isinstance(v['left'], str) and f"'{v['left']}'" in text):
                             value = v['left']
                         else:
-                            value = self.db.select(self.dict[table], v['left'], rows).values.tolist()
+                            value = self.db.select(cur_table['tabledata'], v['left'], rows).values.tolist()
                     else:
                         value = self.get_val(table, up.content[0]['expression'], rows)
-                    self.db.update(self.dict[table], update_rows=rows, attributes=[up.content[0]['assignment']], values=value)
+                    self.db.update(cur_table['tabledata'], update_rows=rows, attributes=[up.content[0]['assignment']], values=value)
 
         # 添加
         elif function == 'INSERT':
@@ -99,8 +100,9 @@ class blabla:
         elif function == 'DELETE':
             tables = self.get_tables(function)
             for table in tables:
+                cur_table = self.db.database[table]
                 rows = self.get_row(table) if "WHERE" in self.clause.keys() else None
-                self.db.delete(self.dict[table], del_rows=rows)
+                self.db.delete(cur_table['tabledata'], del_rows=rows)
 
         # 创建新表
         elif function == 'CREATE':
@@ -167,11 +169,12 @@ class blabla:
 
     # WHERE语句的筛选行和对AND、OR运算结果
     def get_row(self, table):
+        cur_table = self.db.database[table]
         num_condition = len(self.clause["WHERE"].content)
         rows_ = []
         for i in range(0, num_condition):
             condition = self.clause["WHERE"].content[i].content[0]
-            row = self.db.where(self.dict[table], condition['left'], condition['right'], condition['op'])
+            row = self.db.where(cur_table['tabledata'], condition['left'], condition['right'], condition['op'])
             rows_.append(set(row))
         operators = [expression_i.value for expression_i in self.clause["WHERE"].content[1:]]
         rows = rows_[0]
@@ -192,7 +195,8 @@ class blabla:
 
     # SET 右边为表达式的情况
     def get_val(self, table, expression, rows):
-        result = self.db.select(self.dict[table], expression['left'], rows)
+        cur_table = self.db.database[table]
+        result = self.db.select(cur_table['tabledata'], expression['left'], rows)
         if expression['op'] == '+':
             result += expression['right']
         elif expression['op'] == '-':
@@ -246,7 +250,6 @@ class blabla:
             print("创建失败!")
 
 
-
 if __name__ == "__main__":
     a = blabla()
 
@@ -290,6 +293,16 @@ if __name__ == "__main__":
     print(a.db.database["Persons"]['tabledata'])
     print("="*20)
     print("="*20)
+
+    # 查询
+    sql4 = """
+        SELECT *
+        FROM Persons
+        WHERE PersonID >= 4
+        """
+    a.execute(sql4)
+    print("=" * 20)
+    print("=" * 20)
 
     # print(a.db.database["Persons"]['datatypes'])
     # print(a.db.database["Persons"]['not_null_flag'])
